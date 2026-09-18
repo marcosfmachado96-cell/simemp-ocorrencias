@@ -10,20 +10,19 @@ create table if not exists public.perfis (
   nome       text not null,
   perfil     text not null default 'tecnico' check (perfil in ('tecnico', 'gestor', 'der')),
   ativo      boolean not null default true,
+  email      text,
   criado_em  timestamptz not null default now()
 );
+alter table public.perfis add column if not exists email text;
 
--- cria o perfil automaticamente quando um usuário é cadastrado em Authentication > Users.
--- No cadastro, informar em "User Metadata": {"nome": "Fulano", "perfil": "tecnico"}
+-- cria o perfil automaticamente quando um usuário é cadastrado (painel ou Authentication > Users).
+-- Nasce INATIVO e como técnico: o gestor ativa e define nome/perfil pelo painel.
+-- Quem se cadastrar por conta própria fica sem acesso.
 create or replace function public.criar_perfil()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.perfis (id, nome, perfil)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'nome', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'perfil', 'tecnico')
-  )
+  insert into public.perfis (id, nome, perfil, ativo, email)
+  values (new.id, coalesce(new.raw_user_meta_data->>'nome', split_part(new.email, '@', 1)), 'tecnico', false, new.email)
   on conflict (id) do nothing;
   return new;
 end $$;
@@ -102,6 +101,22 @@ alter table public.fotos       enable row level security;
 
 drop policy if exists perfis_ler on public.perfis;
 create policy perfis_ler on public.perfis for select to authenticated using (true);
+drop policy if exists perfis_atualizar on public.perfis;
+create policy perfis_atualizar on public.perfis for update to authenticated
+  using (public.meu_perfil() = 'gestor') with check (public.meu_perfil() = 'gestor');
+
+-- gestor não pode se desativar nem rebaixar o próprio perfil por engano
+create or replace function public.proteger_gestor()
+returns trigger language plpgsql as $$
+begin
+  if old.id = auth.uid() and (new.ativo = false or new.perfil <> 'gestor') then
+    raise exception 'Você não pode desativar ou rebaixar o seu próprio usuário.';
+  end if;
+  return new;
+end $$;
+drop trigger if exists ao_atualizar_perfil on public.perfis;
+create trigger ao_atualizar_perfil before update on public.perfis
+  for each row execute function public.proteger_gestor();
 
 drop policy if exists oc_ler on public.ocorrencias;
 create policy oc_ler on public.ocorrencias for select to authenticated using (public.meu_perfil() is not null);

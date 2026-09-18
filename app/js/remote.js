@@ -141,5 +141,44 @@ window.REMOTE = (() => {
     return u;
   }
 
-  return { cliente, entrar, sair, restaurar, iniciar, enviarFila, trazer, assinar };
+  // ---------- usuários (gestor) ----------
+  const URL_APP = () => location.origin + location.pathname.replace(/[^/]*$/, '');
+  async function listarUsuarios() {
+    const { data, error } = await cliente().from('perfis').select('id, nome, email, perfil, ativo, criado_em').order('nome');
+    if (error) throw error;
+    return data;
+  }
+  // Cria o usuário com um cliente separado (não derruba a sessão do gestor) e em seguida
+  // ativa/define perfil com a sessão do gestor. O trigger do banco cria o perfil inativo.
+  async function criarUsuario({ email, senha, nome, perfil }) {
+    const aux = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'simemp-aux' },
+    });
+    const { data, error } = await aux.auth.signUp({ email, password: senha, options: { data: { nome } } });
+    if (error) throw new Error(error.message);
+    const u = data.user;
+    if (!u || !u.identities || u.identities.length === 0) throw new Error('Este e-mail já está cadastrado.');
+    const { error: e2 } = await cliente().from('perfis').update({ nome, perfil, ativo: true }).eq('id', u.id);
+    if (e2) throw new Error('Usuário criado, mas não foi possível ativar: ' + e2.message);
+    return u.id;
+  }
+  async function atualizarUsuario(id, campos) {
+    const { error } = await cliente().from('perfis').update(campos).eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+  async function enviarRedefinicao(email) {
+    const { error } = await cliente().auth.resetPasswordForEmail(email, { redirectTo: URL_APP() + 'index.html' });
+    if (error) throw new Error(error.message);
+  }
+  async function alterarSenha(nova) {
+    const { error } = await cliente().auth.updateUser({ password: nova });
+    if (error) throw new Error(error.message);
+  }
+  // chamado quando o usuário abre o link de redefinição de senha (e-mail)
+  function aoRecuperarSenha(cb) {
+    cliente().auth.onAuthStateChange((evento) => { if (evento === 'PASSWORD_RECOVERY') cb(); });
+  }
+
+  return { cliente, entrar, sair, restaurar, iniciar, enviarFila, trazer, assinar,
+           listarUsuarios, criarUsuario, atualizarUsuario, enviarRedefinicao, alterarSenha, aoRecuperarSenha };
 })();

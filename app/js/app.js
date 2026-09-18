@@ -84,6 +84,7 @@
       [I.monitor, 'Abrir painel (computador)', () => window.open('painel.html', '_blank')],
     ];
     if (CONFIG.MODO === 'local') itens.push([I.refresh, 'Recriar dados fictícios', async () => { await STORE.limparTudo(); await SEED.gerar(28); toast('Dados recriados'); renderLista(); }]);
+    if (SUPA) itens.push([I.key, 'Alterar minha senha', () => modalSenha(false)]);
     itens.push([I.logout, 'Sair', sair]);
     modal('Menu', m => {
       itens.forEach(([ic, t, fn]) => { const b = el('button', 'btn sec bloco', ic + esc(t)); b.style.marginBottom = '8px'; b.onclick = () => { fecharModal(); fn(); }; m.appendChild(b); });
@@ -319,6 +320,25 @@
     });
   }
 
+  // ---------- senha ----------
+  function modalSenha(recuperacao) {
+    modal(recuperacao ? 'Defina sua nova senha' : 'Alterar minha senha', m => {
+      m.innerHTML = `
+        <div class="campo"><label>Nova senha</label><input type="password" id="s-nova" autocomplete="new-password" minlength="6"></div>
+        <div class="campo"><label>Repita a nova senha</label><input type="password" id="s-nova2" autocomplete="new-password"></div>
+        <div class="erro-login oculto" id="s-erro"></div>
+        <button class="btn bloco" id="s-ok">${I.check}Salvar nova senha</button>`;
+      m.querySelector('#s-ok').onclick = async () => {
+        const a = m.querySelector('#s-nova').value, b = m.querySelector('#s-nova2').value, erro = m.querySelector('#s-erro');
+        erro.classList.add('oculto');
+        if (a.length < 6) { erro.textContent = 'A senha precisa ter ao menos 6 caracteres.'; erro.classList.remove('oculto'); return; }
+        if (a !== b) { erro.textContent = 'As senhas não conferem.'; erro.classList.remove('oculto'); return; }
+        try { await REMOTE.alterarSenha(a); fecharModal(); toast('Senha alterada'); if (recuperacao) { history.replaceState(null, '', location.pathname); const u = await REMOTE.iniciar(); if (u) iniciar(); } }
+        catch (e) { erro.textContent = e.message; erro.classList.remove('oculto'); }
+      };
+    });
+  }
+
   // ---------- modal ----------
   let modalEl = null;
   function modal(titulo, build) {
@@ -333,8 +353,12 @@
   // ---------- início ----------
   atualizarRede();
   if (SUPA) {
+    // link de redefinição de senha (vindo do e-mail) abre direto o formulário de nova senha
+    const recuperando = /type=recovery/.test(location.hash);
+    if (recuperando) REMOTE.aoRecuperarSenha(() => modalSenha(true));
     let u = null;
     try { u = await REMOTE.iniciar(); } catch (ex) { console.warn(ex); }
     if (u) iniciar(); else mostrarLogin();
+    if (recuperando && u) modalSenha(true);
   } else if (usuario()) iniciar(); else mostrarLogin();
 })();

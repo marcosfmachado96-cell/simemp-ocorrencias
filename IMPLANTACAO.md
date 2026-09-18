@@ -11,17 +11,13 @@
 
 ## Cadastrar um técnico (ou usuário do DER)
 
-1. Supabase → *Authentication* → *Users* → *Add user* → *Create new user*: e-mail, senha inicial, **Auto confirm user** marcado → *Create user*.
-2. O perfil nasce como `tecnico` com o nome tirado do e-mail. Para ajustar nome e perfil:
-   *SQL Editor* → cole e execute (trocando e-mail, nome e perfil):
-   ```sql
-   update public.perfis set nome = 'Nome do Técnico', perfil = 'tecnico'
-   where id = (select id from auth.users where email = 'tecnico@empresa.com');
-   ```
-   Perfis: `tecnico` (registra e atende), `gestor` (tudo), `der` (só leitura no painel).
-   Ou edite direto em *Table Editor* → `perfis` (colunas `nome`, `perfil`, `ativo`).
-3. Para desativar alguém: `ativo` = false na tabela `perfis`.
-4. Instalar no celular: abrir o endereço do app → menu do navegador → **Adicionar à tela de início** → entrar com e-mail e senha.
+Pelo próprio painel, logado como gestor: botão **Usuários** no topo.
+- **Novo usuário**: nome, e-mail, senha inicial e perfil (`Técnico` registra e atende; `Gestor` tudo; `DER` só leitura).
+- Na lista: editar nome/perfil, ativar/desativar, enviar e-mail de redefinição de senha.
+- O usuário recebe a senha inicial de você e pode trocá-la no menu ☰ do app ("Alterar minha senha").
+- Segurança: quem tentar se cadastrar por fora do painel nasce **inativo** e não consegue entrar.
+
+Instalar no celular: abrir o endereço do app → menu do navegador → **Adicionar à tela de início** → entrar com e-mail e senha.
 
 ## Atualizar o sistema
 

@@ -37,6 +37,8 @@
       $('#tela-login').classList.add('oculto');
     }
     $('#usuario-topo').textContent = u.nome; $('#usuario-topo').classList.remove('oculto');
+    $('#btn-senha').innerHTML = I.key; $('#btn-senha').classList.remove('oculto'); $('#btn-senha').onclick = () => modalSenha();
+    if (u.perfil === 'gestor') { $('#btn-usuarios').innerHTML = I.users + 'Usuários'; $('#btn-usuarios').classList.remove('oculto'); $('#btn-usuarios').onclick = () => modalUsuarios(); }
     await REMOTE.trazer(true).catch(() => {});
   } else {
     // protótipo: troca de usuário direto no topo
@@ -207,6 +209,108 @@
       t.appendChild(d);
     }
     c.appendChild(t);
+  }
+
+  // ---------- modal genérico (centralizado) ----------
+  let modalEl = null;
+  function modal(titulo, build, largura) {
+    fecharModal();
+    modalEl = el('div', 'modal-fundo centro'); const m = el('div', 'modal');
+    if (largura) m.style.maxWidth = largura;
+    m.innerHTML = `<div class="cab"><h3>${esc(titulo)}</h3><button class="fechar-modal" aria-label="Fechar">${I.close}</button></div>`;
+    m.querySelector('.fechar-modal').onclick = fecharModal;
+    const corpo = el('div'); m.appendChild(corpo); modalEl.appendChild(m);
+    modalEl.onclick = e => { if (e.target === modalEl) fecharModal(); };
+    document.body.appendChild(modalEl); build(corpo, m);
+  }
+  function fecharModal() { if (modalEl) { modalEl.remove(); modalEl = null; } }
+  function toast(msg, erro) { const t = el('div', 'toast' + (erro ? ' erro' : ''), esc(msg)); document.body.appendChild(t); setTimeout(() => t.remove(), 3500); }
+
+  // ---------- minha senha ----------
+  function modalSenha() {
+    modal('Alterar minha senha', m => {
+      m.innerHTML = `<div class="form-usuario" style="background:transparent;border:0;padding:0">
+        <div class="campo"><label>Nova senha</label><input type="password" id="s-nova" autocomplete="new-password" minlength="6"></div>
+        <div class="campo"><label>Repita a nova senha</label><input type="password" id="s-nova2" autocomplete="new-password"></div>
+        <div class="msg" id="s-msg"></div>
+        <button class="btn bloco" id="s-ok" style="margin-top:8px">${I.check}Salvar nova senha</button></div>`;
+      m.querySelector('#s-ok').onclick = async () => {
+        const a = m.querySelector('#s-nova').value, b = m.querySelector('#s-nova2').value, msg = m.querySelector('#s-msg');
+        if (a.length < 6) { msg.className = 'msg erro'; msg.textContent = 'A senha precisa ter ao menos 6 caracteres.'; return; }
+        if (a !== b) { msg.className = 'msg erro'; msg.textContent = 'As senhas não conferem.'; return; }
+        try { await REMOTE.alterarSenha(a); fecharModal(); toast('Senha alterada'); }
+        catch (e) { msg.className = 'msg erro'; msg.textContent = e.message; }
+      };
+    }, '420px');
+  }
+
+  // ---------- cadastro de usuários (gestor) ----------
+  const PERFIS = [['tecnico', 'Técnico'], ['gestor', 'Gestor'], ['der', 'DER (leitura)']];
+  const nomePerfil = p => (PERFIS.find(x => x[0] === p) || [p, p])[1];
+  const corPerfil = p => ({ tecnico: '#2a63b0', gestor: '#10294d', der: '#6b7280' }[p] || '#888');
+  function modalUsuarios() {
+    modal('Usuários do sistema', async (m) => {
+      m.innerHTML = `<div class="usuarios-grid"><div><table class="tabela"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th></th></tr></thead><tbody id="u-lista"><tr><td colspan="5">Carregando…</td></tr></tbody></table></div>
+        <div class="form-usuario" id="u-form"></div></div>`;
+      const lista = m.querySelector('#u-lista'), form = m.querySelector('#u-form');
+      const eu = STORE.usuarioAtual();
+
+      function formNovo() {
+        form.innerHTML = `<div class="titulo-form">${I.userPlus} Novo usuário</div>
+          <div class="campo"><label>Nome</label><input type="text" id="u-nome" placeholder="Nome completo"></div>
+          <div class="campo"><label>E-mail</label><input type="email" id="u-email" autocomplete="off" placeholder="nome@empresa.com"></div>
+          <div class="campo"><label>Senha inicial</label><input type="password" id="u-senha" autocomplete="new-password" minlength="6" placeholder="mín. 6 caracteres"></div>
+          <div class="campo"><label>Perfil</label><select id="u-perfil">${PERFIS.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></div>
+          <button class="btn bloco" id="u-criar">${I.userPlus}Criar usuário</button>
+          <div class="msg" id="u-msg"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:10px">Informe a senha inicial ao usuário; ele pode trocá-la no menu do app.</div>`;
+        form.querySelector('#u-criar').onclick = async () => {
+          const nome = form.querySelector('#u-nome').value.trim(), email = form.querySelector('#u-email').value.trim().toLowerCase(), senha = form.querySelector('#u-senha').value, perfil = form.querySelector('#u-perfil').value;
+          const msg = form.querySelector('#u-msg'); msg.className = 'msg';
+          if (!nome || !email || senha.length < 6) { msg.className = 'msg erro'; msg.textContent = 'Preencha nome, e-mail e uma senha com ao menos 6 caracteres.'; return; }
+          const b = form.querySelector('#u-criar'); b.disabled = true; msg.textContent = 'Criando…';
+          try { await REMOTE.criarUsuario({ email, senha, nome, perfil }); msg.className = 'msg ok'; msg.textContent = `${nome} cadastrado como ${nomePerfil(perfil).toLowerCase()}.`; form.querySelector('#u-nome').value = form.querySelector('#u-email').value = form.querySelector('#u-senha').value = ''; carregar(); }
+          catch (e) { msg.className = 'msg erro'; msg.textContent = e.message; }
+          finally { b.disabled = false; }
+        };
+      }
+      function formEditar(u) {
+        form.innerHTML = `<div class="titulo-form">${I.edit} Editar usuário</div>
+          <div class="campo"><label>Nome</label><input type="text" id="e-nome" value="${esc(u.nome)}"></div>
+          <div class="campo"><label>E-mail</label><input type="text" value="${esc(u.email || '')}" disabled></div>
+          <div class="campo"><label>Perfil</label><select id="e-perfil">${PERFIS.map(([v, n]) => `<option value="${v}" ${v === u.perfil ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+          <button class="btn bloco" id="e-salvar">${I.check}Salvar</button>
+          <button class="btn sec bloco" id="e-cancelar" style="margin-top:8px">Cancelar</button>
+          <div class="msg" id="e-msg"></div>`;
+        form.querySelector('#e-cancelar').onclick = formNovo;
+        form.querySelector('#e-salvar').onclick = async () => {
+          const msg = form.querySelector('#e-msg');
+          try { await REMOTE.atualizarUsuario(u.id, { nome: form.querySelector('#e-nome').value.trim(), perfil: form.querySelector('#e-perfil').value }); toast('Usuário atualizado'); formNovo(); carregar(); }
+          catch (e) { msg.className = 'msg erro'; msg.textContent = e.message; }
+        };
+      }
+      async function carregar() {
+        let us = [];
+        try { us = await REMOTE.listarUsuarios(); } catch (e) { lista.innerHTML = `<tr><td colspan="5" style="color:var(--red)">${esc(e.message)}</td></tr>`; return; }
+        lista.innerHTML = '';
+        for (const u of us) {
+          const tr = el('tr', u.ativo ? '' : 'inativo');
+          tr.innerHTML = `<td><b>${esc(u.nome)}</b>${u.id === eu.id ? ' <span style="color:var(--muted);font-size:11px">(você)</span>' : ''}</td><td>${esc(u.email || '—')}</td>
+            <td><span class="badge perfil soft" style="--cor:${corPerfil(u.perfil)}">${esc(nomePerfil(u.perfil))}</span></td>
+            <td>${u.ativo ? '<span class="badge soft" style="--cor:#16a34a">Ativo</span>' : '<span class="badge soft" style="--cor:#98a2b3">Inativo</span>'}</td>
+            <td><div class="acoes-linha">
+              <button title="Editar">${I.edit}</button>
+              <button title="Enviar e-mail de redefinição de senha">${I.mail}</button>
+              <button title="${u.ativo ? 'Desativar' : 'Ativar'}">${I.power}</button></div></td>`;
+          const [bEd, bMail, bPow] = tr.querySelectorAll('button');
+          bEd.onclick = () => formEditar(u);
+          bMail.onclick = async () => { if (!u.email) return; if (!confirm(`Enviar e-mail de redefinição de senha para ${u.email}?`)) return; try { await REMOTE.enviarRedefinicao(u.email); toast('E-mail enviado'); } catch (e) { toast(e.message, true); } };
+          bPow.onclick = async () => { try { await REMOTE.atualizarUsuario(u.id, { ativo: !u.ativo }); toast(u.ativo ? 'Usuário desativado' : 'Usuário ativado'); carregar(); } catch (e) { toast(e.message, true); } };
+          lista.appendChild(tr);
+        }
+      }
+      formNovo(); carregar();
+    });
   }
 
   // ---------- relatório ----------

@@ -75,3 +75,30 @@ body.painel .topo .btn.amarelo { box-shadow: 0 4px 14px -4px rgba(242,169,0,.6);
   .kpis { grid-template-columns: repeat(2, 1fr); padding: 10px 12px; }
   .kpi { padding: 8px 10px; }
 }
+
+/* ---------- modal centralizado (painel) ---------- */
+.modal-fundo.centro { align-items: center; padding: 20px; }
+.modal-fundo.centro .modal { border-radius: 16px; max-width: 860px; max-height: 90vh; padding: 20px 22px 22px; }
+.modal-fundo.centro .modal::before { display: none; }
+.modal .cab { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.modal .cab h3 { margin: 0; }
+.modal .fechar-modal { border: 1px solid var(--line); background: var(--surface-2); width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); }
+.modal .fechar-modal .ico { width: 16px; height: 16px; }
+.usuarios-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+@media (max-width: 720px) { .usuarios-grid { grid-template-columns: 1fr; } }
+.tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabela th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.tabela td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tabela tr.inativo td { color: var(--muted-2); }
+.tabela .acoes-linha { display: flex; gap: 4px; justify-content: flex-end; }
+.tabela .acoes-linha button { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 4px 6px; color: var(--text-2); display: grid; place-items: center; }
+.tabela .acoes-linha button:hover { border-color: var(--line-2); background: var(--surface-2); }
+.tabela .acoes-linha button .ico { width: 15px; height: 15px; }
+.form-usuario { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.form-usuario .campo { margin-bottom: 10px; }
+.form-usuario .campo input, .form-usuario .campo select { padding: 9px 10px; font-size: 13.5px; }
+.form-usuario .titulo-form { font-weight: 600; margin-bottom: 10px; font-size: 14px; }
+.form-usuario .msg { font-size: 12.5px; margin-top: 8px; }
+.form-usuario .msg.ok { color: var(--green); }
+.form-usuario .msg.erro { color: var(--red); }
+.badge.perfil { text-transform: capitalize; }

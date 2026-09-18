@@ -27,6 +27,11 @@ window.ICONS = (() => {
     filter: w('<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>'),
     search: w('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
     inbox: w('<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'),
+    edit: w('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'),
+    key: w('<path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15 8m0 0 3 3m-3-3 2-2"/>'),
+    mail: w('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/>'),
+    userPlus: w('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>'),
+    power: w('<path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>'),
     checkCircle: w('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'),
   };
 })();
