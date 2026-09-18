@@ -1,7 +1,36 @@
 # Implantação — SIMEMP Ocorrências
 
-Roteiro para colocar o sistema no ar com custo zero. Só as etapas marcadas com **[você]** precisam ser feitas
-por você (criação de contas e senhas); o restante eu faço quando você me passar as duas chaves.
+**Sistema no ar desde 18/09/2026.**
+
+| O quê | Endereço |
+|---|---|
+| App do técnico (celular) | https://marcosfmachado96-cell.github.io/simemp-ocorrencias/ |
+| Painel (computador) | https://marcosfmachado96-cell.github.io/simemp-ocorrencias/painel.html |
+| Código | https://github.com/marcosfmachado96-cell/simemp-ocorrencias |
+| Banco / usuários | https://supabase.com/dashboard/project/dsgtfrkyocevlywscpvu |
+
+## Cadastrar um técnico (ou usuário do DER)
+
+1. Supabase → *Authentication* → *Users* → *Add user* → *Create new user*: e-mail, senha inicial, **Auto confirm user** marcado → *Create user*.
+2. O perfil nasce como `tecnico` com o nome tirado do e-mail. Para ajustar nome e perfil:
+   *SQL Editor* → cole e execute (trocando e-mail, nome e perfil):
+   ```sql
+   update public.perfis set nome = 'Nome do Técnico', perfil = 'tecnico'
+   where id = (select id from auth.users where email = 'tecnico@empresa.com');
+   ```
+   Perfis: `tecnico` (registra e atende), `gestor` (tudo), `der` (só leitura no painel).
+   Ou edite direto em *Table Editor* → `perfis` (colunas `nome`, `perfil`, `ativo`).
+3. Para desativar alguém: `ativo` = false na tabela `perfis`.
+4. Instalar no celular: abrir o endereço do app → menu do navegador → **Adicionar à tela de início** → entrar com e-mail e senha.
+
+## Atualizar o sistema
+
+Qualquer alteração em `app/` publicada com `git push` na branch `main` vai ao ar em ~1 minuto (GitHub Actions).
+Os celulares pegam a versão nova na próxima abertura com sinal.
+
+---
+
+## Roteiro original (já executado)
 
 ## 1. Supabase (banco, login e fotos)
 
