@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIMEMP Ocorrências — Painel</title>
+<link rel="icon" href="icons/logo-64.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/painel.css">
+</head>
+<body class="painel">
+
+<!-- LOGIN (modo supabase) -->
+<div id="tela-login" class="login oculto" style="position:fixed;inset:0;z-index:2000">
+  <img src="icons/icon-192.png" alt="">
+  <h1>SIMEMP Ocorrências</h1>
+  <p>Painel de acompanhamento<br>Superintendência Regional Leste — DER-PR</p>
+  <div class="caixa">
+    <form id="login-real" autocomplete="on">
+      <div class="campo"><label>E-mail</label><input type="email" id="login-email" autocomplete="username" required></div>
+      <div class="campo"><label>Senha</label><input type="password" id="login-senha" autocomplete="current-password" required></div>
+      <div class="erro-login oculto" id="login-erro"></div>
+      <button class="btn bloco" type="submit" id="btn-entrar-real">Entrar</button>
+      <div class="nota">Acesso restrito. Sem usuário? Fale com o gestor.</div>
+    </form>
+  </div>
+</div>
+
+<header class="topo">
+  <div class="marca">
+    <img src="icons/logo-64.png" alt="">
+    <h1>SIMEMP Ocorrências<small>Painel de acompanhamento · Superintendência Regional Leste — DER-PR</small></h1>
+  </div>
+  <span class="chip-rede" id="chip-rede">online</span>
+  <select id="sel-usuario" class="sel-usuario"></select>
+  <span class="usuario-topo oculto" id="usuario-topo"></span>
+  <button class="btn-icone oculto" id="btn-sair" aria-label="Sair" title="Sair"></button>
+  <button class="btn amarelo" id="btn-pdf"></button>
+</header>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="corpo">
+  <aside class="lateral">
+    <div class="filtros">
+      <div class="escopo">
+        <button class="ativo" data-escopo="abertas">Em aberto</button>
+        <button data-escopo="todas">Todas</button>
+      </div>
+      <div class="linha-campos periodo oculto" id="periodo">
+        <div class="campo"><label>De</label><input type="date" id="f-de"></div>
+        <div class="campo"><label>Até</label><input type="date" id="f-ate"></div>
+      </div>
+      <div class="linha-campos">
+        <div class="campo"><label>Rodovia</label><select id="f-rod"><option value="">Todas</option></select></div>
+        <div class="campo"><label>Status</label><select id="f-status"><option value="">Todos</option></select></div>
+      </div>
+      <div class="linha-campos">
+        <div class="campo"><label>Severidade</label><select id="f-sev"><option value="">Todas</option></select></div>
+        <div class="campo"><label>Tipo</label><select id="f-tipo"><option value="">Todos</option></select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="f-colapso"> Somente com risco de colapso de pista</label>
+    </div>
+    <div class="resumo-lista" id="resumo-lista"></div>
+    <div class="lista" id="lista"></div>
+  </aside>
+
+  <main class="mapa-wrap">
+    <div id="mapa"></div>
+    <div class="legenda">
+      <b>Severidade</b>
+      <div id="leg-sev"></div>
+      <b>Status (borda)</b>
+      <div id="leg-status"></div>
+    </div>
+  </main>
+
+  <aside class="detalhe oculto" id="detalhe"></aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/store.js"></script>
+<script src="js/remote.js"></script>
+<script src="js/fotos.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/relatorio.js"></script>
+<script src="js/painel.js"></script>
+</body>
+</html>

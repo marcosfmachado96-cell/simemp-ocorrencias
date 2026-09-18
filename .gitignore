@@ -1,0 +1,6 @@
+_testes/
+__pycache__/
+*.pyc
+# fonte do shapefile (28 MB) fica so no OneDrive; o app usa os geojson gerados em app/data
+SRE_2024_Atualizado/
+.claude/
