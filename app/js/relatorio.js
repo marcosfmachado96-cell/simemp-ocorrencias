@@ -112,7 +112,7 @@ window.RELATORIO = (() => {
       startY: y, margin: { left: M, right: M },
       head: [['Data', 'Rodovia', 'km', 'Sent.', 'Tipo', 'Sev.', 'Status', 'Colapso', 'Pista afetada', 'Atendimento', 'Resolvida', 'Tempo']],
       body: ordenadas.map(o => [
-        fmtData(o.criado_em), o.rodovia, Number(o.km).toFixed(2).replace('.', ','), o.sentido === 'crescente' ? 'cresc.' : o.sentido === 'decrescente' ? 'decr.' : 'ambos',
+        fmtData(o.criado_em), o.rodovia, Number(o.km).toFixed(2).replace('.', ','), CONFIG.nomeSentido(o.sentido),
         CONFIG.nomeTipo(o.tipo), CONFIG.nomeSev(o.severidade), CONFIG.nomeStatus(o.status), o.risco_colapso ? 'SIM' : '',
         CONFIG.nomePista(o.pista_afetada),
         o.atendimento ? [o.atendimento.equipamento, o.atendimento.executor, o.atendimento.volume_m3 && o.atendimento.volume_m3 + ' m³'].filter(Boolean).join(' / ') : '',

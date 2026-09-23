@@ -137,7 +137,7 @@
       d.innerHTML = `
         <div class="linha1"><span class="titulo">${esc(CONFIG.nomeTipo(o.tipo))}</span>
           <span class="badge soft" style="--cor:${CONFIG.corStatus(o.status)}">${esc(CONFIG.nomeStatus(o.status))}</span></div>
-        <div class="local">${esc(o.rodovia)} · ${fmtKm(o.km)} · ${esc(o.sentido)}</div>
+        <div class="local">${esc(o.rodovia)} · ${fmtKm(o.km)} · ${esc(CONFIG.nomeSentido(o.sentido))}</div>
         <div class="meta"><span class="badge" style="--cor:${CONFIG.corSev(o.severidade)}">${esc(CONFIG.nomeSev(o.severidade))}</span>
           ${o.risco_colapso ? `<span class="aviso-colapso">${I.alert}colapso</span>` : ''}<span>${fmtData(o.criado_em)}</span><span>${esc(o.criado_por)}</span></div>`;
       d.onclick = () => selecionar(o.id, true);
@@ -185,7 +185,7 @@
         <span class="badge" style="--cor:${CONFIG.corSev(o.severidade)}">${esc(CONFIG.nomeSev(o.severidade))}</span>
         ${o.risco_colapso ? `<span class="badge" style="--cor:#dc2626">${I.alert}Risco de colapso</span>` : ''}</div>
       <div class="info-grid">
-        <div><span>Sentido</span>${esc(o.sentido)}</div><div><span>Pista afetada</span>${esc(CONFIG.nomePista(o.pista_afetada))}</div>
+        <div><span>Sentido</span>${esc(CONFIG.nomeSentido(o.sentido))}</div><div><span>Pista afetada</span>${esc(CONFIG.nomePista(o.pista_afetada))}</div>
         <div><span>Município</span>${esc(o.municipio || '—')}</div><div><span>Trecho SRE</span>${esc(o.trecho || '—')}</div>
         <div><span>Registrado por</span>${esc(o.criado_por)}</div><div><span>Em</span>${fmtData(o.criado_em)}</div>
         <div><span>Coordenadas</span>${o.lat ? o.lat.toFixed(5) + ', ' + o.lng.toFixed(5) : '—'}</div>

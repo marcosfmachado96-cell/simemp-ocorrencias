@@ -95,11 +95,13 @@
   // ---------- navegação ----------
   let telaAtual = 'lista', detalheId = null;
   function ir(tela, id) {
+    const u = usuario();
+    if (!u) return mostrarLogin(); // sessão expirou enquanto o app estava aberto
     telaAtual = tela; detalheId = id || null;
     ['lista', 'nova', 'detalhe'].forEach(t => $('#tela-' + t).classList.toggle('oculto', t !== tela));
     $('#btn-voltar').classList.toggle('oculto', tela === 'lista');
     $('#logo-topo').classList.toggle('oculto', tela !== 'lista');
-    $('#fab').classList.toggle('oculto', tela !== 'lista' || usuario().perfil === 'der');
+    $('#fab').classList.toggle('oculto', tela !== 'lista' || u.perfil === 'der');
     $('#titulo').firstChild.textContent = tela === 'lista' ? 'SIMEMP Ocorrências' : tela === 'nova' ? 'Nova ocorrência' : 'Ocorrência';
     window.scrollTo(0, 0);
     if (tela === 'lista') renderLista();
@@ -123,7 +125,7 @@
     d.innerHTML = `
       <div class="linha1"><span class="titulo">${esc(CONFIG.nomeTipo(o.tipo))}</span>
         <span class="badge soft" style="--cor:${CONFIG.corStatus(o.status)}">${esc(CONFIG.nomeStatus(o.status))}</span></div>
-      <div class="local">${esc(o.rodovia)} · ${fmtKm(o.km)} · ${esc(o.sentido)}</div>
+      <div class="local">${esc(o.rodovia)} · ${fmtKm(o.km)} · ${esc(CONFIG.nomeSentido(o.sentido))}</div>
       <div class="meta">
         <span class="badge" style="--cor:${CONFIG.corSev(o.severidade)}">${esc(CONFIG.nomeSev(o.severidade))}</span>
         ${o.risco_colapso ? `<span class="aviso-colapso">${I.alert}risco de colapso</span>` : ''}
@@ -153,6 +155,8 @@
     $('#f-colapso').checked = false; $('#f-colapso-wrap').classList.remove('on'); $('#f-obs').value = ''; $('#f-km').value = '';
     const selR = $('#f-rodovia'); selR.innerHTML = '<option value="">—</option>';
     GEO.rodovias().forEach(r => selR.appendChild(el('option', null, r)).value = r);
+    const selS = $('#f-sentido'); selS.innerHTML = '';
+    CONFIG.SENTIDOS.forEach(x => selS.appendChild(el('option', null, x.nome)).value = x.id);
     renderFotosForm();
     // GPS
     gpsEstado('', 'Obtendo GPS…'); $('#gps-loc').textContent = '—'; $('#gps-coord').textContent = '';
@@ -166,7 +170,7 @@
       if (loc) {
         form.loc = loc;
         gpsEstado('ok', `Localizado na malha (${loc.distancia_m} m do eixo) — confira e ajuste se necessário`);
-        $('#gps-loc').textContent = `${loc.rodovia} · ${fmtKm(loc.km)} · ${loc.sentido}${loc.municipio ? ' · ' + loc.municipio : ''}`;
+        $('#gps-loc').textContent = `${loc.rodovia} · ${fmtKm(loc.km)} · ${CONFIG.nomeSentido(loc.sentido)}${loc.municipio ? ' · ' + loc.municipio : ''}`;
         if (!$('#f-km').dataset.manual) { $('#f-rodovia').value = loc.rodovia; $('#f-km').value = loc.km.toFixed(2); $('#f-sentido').value = loc.sentido; }
       } else {
         gpsEstado('', 'Fora da malha da SR Leste / Médio Iguaçu / Xisto (>300 m) — informe rodovia e km');
@@ -183,10 +187,10 @@
   // fotos do formulário
   let alvoFotos = null; // callback que recebe os blobs
   function renderFotosForm() { renderFotos($('#f-fotos'), form.fotos, i => { form.fotos.splice(i, 1); renderFotosForm(); }, () => pedirFotos(bl => { form.fotos.push(...bl); renderFotosForm(); })); }
-  function renderFotos(cont, blobs, onRemove, onAdd) {
+  function renderFotos(cont, itens, onRemove, onAdd) {
     cont.innerHTML = '';
-    blobs.forEach((b, i) => {
-      const w = el('div', 'foto-wrap'); const img = el('img', 'foto'); img.src = URL.createObjectURL(b); w.appendChild(img);
+    itens.forEach((f, i) => {
+      const w = el('div', 'foto-wrap'); const img = el('img', 'foto'); img.src = URL.createObjectURL(f.blob); w.appendChild(img);
       const rm = el('button', 'rm', I.close); rm.type = 'button'; rm.onclick = () => onRemove(i); w.appendChild(rm); cont.appendChild(w);
     });
     const add = el('div', 'add', `${I.camera}<span>Foto</span>`); add.onclick = onAdd; cont.appendChild(add);
@@ -194,10 +198,29 @@
   function pedirFotos(cb) { alvoFotos = cb; $('#input-foto').value = ''; $('#input-foto').click(); }
   $('#input-foto').addEventListener('change', async e => {
     const files = [...e.target.files]; if (!files.length) return;
-    toast(`Comprimindo ${files.length} foto(s)…`);
-    const blobs = []; for (const f of files) blobs.push(await FOTOS.comprimir(f));
-    if (alvoFotos) alvoFotos(blobs);
+    toast(`Preparando ${files.length} foto(s)…`);
+    const itens = [];
+    for (const f of files) {
+      // guarda o momento e a posição da captura; o carimbo é gravado ao salvar,
+      // quando rodovia, km e município já estão confirmados
+      const g = form.gps || {};
+      itens.push({ blob: await FOTOS.comprimir(f), em: new Date(f.lastModified || Date.now()).toISOString(), lat: g.lat, lng: g.lng, precisao: g.precisao });
+    }
+    if (alvoFotos) alvoFotos(itens);
   });
+
+  // aplica o carimbo (data/hora, rodovia, km, sentido, município, coordenadas) em cada foto
+  async function carimbarTodas(itens, dados) {
+    const saida = [];
+    for (const f of itens) {
+      const linhas = FOTOS.linhasCarimbo({
+        em: f.em, rodovia: dados.rodovia, km: dados.km, sentido: dados.sentido, municipio: dados.municipio,
+        lat: f.lat != null ? f.lat : dados.lat, lng: f.lng != null ? f.lng : dados.lng, precisao: f.precisao,
+      });
+      saida.push(await FOTOS.carimbar(f.blob, linhas));
+    }
+    return saida;
+  }
 
   $('#btn-salvar').onclick = async () => {
     const rodovia = $('#f-rodovia').value, km = parseFloat($('#f-km').value);
@@ -206,19 +229,25 @@
     if (!form.sev) return toast('Selecione a severidade', true);
     if (!form.pista) return toast('Selecione a pista afetada', true);
     if (!form.fotos.length) return toast('Tire ao menos 1 foto', true);
-    const b = $('#btn-salvar'); b.disabled = true;
+    const b = $('#btn-salvar'); b.disabled = true; b.textContent = 'Registrando…';
     try {
+      const municipio = form.loc ? form.loc.municipio : null;
+      const sentido = $('#f-sentido').value;
+      const carimbadas = await carimbarTodas(form.fotos, {
+        rodovia, km, sentido, municipio,
+        lat: form.gps ? form.gps.lat : null, lng: form.gps ? form.gps.lng : null,
+      });
       await STORE.criar({
         lat: form.gps ? form.gps.lat : null, lng: form.gps ? form.gps.lng : null, precisao: form.gps ? form.gps.precisao : null,
-        rodovia, km, sentido: $('#f-sentido').value,
-        trecho: form.loc ? form.loc.trecho : null, municipio: form.loc ? form.loc.municipio : null,
+        rodovia, km, sentido,
+        trecho: form.loc ? form.loc.trecho : null, municipio,
         tipo: form.tipo, severidade: form.sev, pista_afetada: form.pista, risco_colapso: $('#f-colapso').checked,
         observacao: $('#f-obs').value.trim(),
-      }, form.fotos);
+      }, carimbadas);
       delete $('#f-km').dataset.manual;
       toast(navigator.onLine ? 'Ocorrência registrada' : 'Registrada offline — será enviada quando houver sinal');
       ir('lista');
-    } catch (e) { toast(e.message, true); } finally { b.disabled = false; }
+    } catch (e) { toast(e.message, true); } finally { b.disabled = false; b.textContent = 'Registrar ocorrência'; }
   };
 
   // ---------- detalhe ----------
@@ -245,7 +274,7 @@
         ${o.sync !== 'ok' ? `<span class="badge outline" style="--cor:#ea580c">${I.sync}aguardando envio</span>` : ''}
       </div>
       <div class="info-grid">
-        <div><span>Sentido</span>${esc(o.sentido)}</div><div><span>Pista afetada</span>${esc(CONFIG.nomePista(o.pista_afetada))}</div>
+        <div><span>Sentido</span>${esc(CONFIG.nomeSentido(o.sentido))}</div><div><span>Pista afetada</span>${esc(CONFIG.nomePista(o.pista_afetada))}</div>
         <div><span>Município</span>${esc(o.municipio || '—')}</div><div><span>Trecho SRE</span>${esc(o.trecho || '—')}</div>
         <div><span>Registrado por</span>${esc(o.criado_por)}</div><div><span>Em</span>${fmtData(o.criado_em)}</div>
         ${o.atendimento ? `<div><span>Equipamento</span>${esc(o.atendimento.equipamento || '—')}</div><div><span>Executor</span>${esc(o.atendimento.executor || '—')}</div>` : ''}
@@ -260,7 +289,8 @@
     if (perfil !== 'der' && o.status !== 'resolvida') {
       const ac = el('div', 'acoes');
       if (o.status === 'aberta') { const b = el('button', 'btn amarelo bloco', I.play + 'Iniciar atendimento'); b.onclick = () => formAtendimento(o, 'em_atendimento'); ac.appendChild(b); }
-      if (o.status === 'em_atendimento') { const b = el('button', 'btn sec bloco', I.plus + 'Registrar avanço'); b.onclick = () => formAtendimento(o, null); ac.appendChild(b); }
+      const ba = el('button', 'btn sec bloco', I.camera + (o.status === 'aberta' ? 'Adicionar fotos de acompanhamento' : 'Registrar avanço / fotos'));
+      ba.onclick = () => formAtendimento(o, null); ac.appendChild(ba);
       const r = el('button', 'btn verde bloco', I.check + 'Resolver com foto de comprovação'); r.onclick = () => formAtendimento(o, 'resolvida'); ac.appendChild(r);
       c.appendChild(ac);
     }
@@ -293,7 +323,9 @@
 
   // formulário de atendimento / avanço / resolução
   function formAtendimento(o, novoStatus) {
-    const titulo = novoStatus === 'em_atendimento' ? 'Iniciar atendimento' : novoStatus === 'resolvida' ? 'Resolver ocorrência' : 'Registrar avanço';
+    const titulo = novoStatus === 'em_atendimento' ? 'Iniciar atendimento'
+      : novoStatus === 'resolvida' ? 'Resolver ocorrência'
+      : o.status === 'aberta' ? 'Fotos de acompanhamento' : 'Registrar avanço';
     const fotos = [];
     modal(titulo, m => {
       const at = o.atendimento || {};
@@ -307,15 +339,20 @@
         <div class="campo"><div class="rotulo">${novoStatus === 'resolvida' ? 'Fotos de comprovação (obrigatório)' : 'Fotos (opcional)'}</div><div class="fotos-grid" id="a-fotos"></div></div>
         <button class="btn bloco ${novoStatus === 'resolvida' ? 'verde' : ''}" id="a-ok">${novoStatus === 'resolvida' ? I.check + 'Confirmar resolução' : 'Salvar'}</button>`;
       const rf = () => renderFotos(m.querySelector('#a-fotos'), fotos, i => { fotos.splice(i, 1); rf(); }, () => pedirFotos(bl => { fotos.push(...bl); rf(); }));
+      // a ocorrência já tem local definido: o carimbo usa a coordenada registrada nela
+      if (!form.gps && o.lat) form.gps = { lat: o.lat, lng: o.lng, precisao: o.precisao };
       rf();
       m.querySelector('#a-ok').onclick = async () => {
         const atd = mostrarAt ? { equipamento: m.querySelector('#a-equip').value.trim(), executor: m.querySelector('#a-exec').value.trim() } : null;
         if (atd && m.querySelector('#a-vol')) atd.volume_m3 = parseFloat(m.querySelector('#a-vol').value) || null;
         if (atd && !atd.equipamento && !atd.executor && !atd.volume_m3) { if (novoStatus === 'em_atendimento') return toast('Informe ao menos equipamento ou executor', true); }
+        if (!novoStatus && !fotos.length && !m.querySelector('#a-texto').value.trim() && !atd) return toast('Tire ao menos uma foto ou escreva a situação', true);
+        const bOk = m.querySelector('#a-ok'); bOk.disabled = true;
         try {
-          await STORE.atualizar(o.id, { status: novoStatus, texto: m.querySelector('#a-texto').value.trim(), atendimento: atd, fotosBlobs: fotos });
+          const carimbadas = await carimbarTodas(fotos, o);
+          await STORE.atualizar(o.id, { status: novoStatus, texto: m.querySelector('#a-texto').value.trim(), atendimento: atd, fotosBlobs: carimbadas });
           fecharModal(); toast('Registrado'); if (novoStatus === 'resolvida') ir('lista'); else renderDetalhe(o.id);
-        } catch (e) { toast(e.message, true); }
+        } catch (e) { toast(e.message, true); bOk.disabled = false; }
       };
     });
   }

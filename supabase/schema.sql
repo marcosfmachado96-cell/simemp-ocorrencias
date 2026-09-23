@@ -49,7 +49,7 @@ create table if not exists public.ocorrencias (
   precisao       integer,
   rodovia        text not null,
   km             numeric(8,2) not null,
-  sentido        text,
+  sentido        text,   -- direita | esquerda | ambos (padrão SRE)
   trecho         text,
   municipio      text,
   tipo           text not null,
@@ -70,7 +70,7 @@ create index if not exists ocorrencias_criado_idx on public.ocorrencias (criado_
 create table if not exists public.fotos (
   id       uuid primary key,
   oc_id    uuid not null references public.ocorrencias(id) on delete cascade,
-  fase     text not null check (fase in ('abertura', 'atendimento', 'comprovacao')),
+  fase     text not null check (fase in ('abertura', 'acompanhamento', 'atendimento', 'comprovacao')),
   caminho  text not null,          -- caminho dentro do bucket "fotos"
   em       timestamptz not null default now()
 );

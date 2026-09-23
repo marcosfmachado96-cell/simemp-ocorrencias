@@ -5,7 +5,7 @@ window.CONFIG = {
   MODO: 'supabase',
   SUPABASE_URL: 'https://dsgtfrkyocevlywscpvu.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_yFe77x8yjIbmwXctUWt9Sw_uaUWmnHQ',
-  VERSAO: '1.1.0',
+  VERSAO: '1.2.0',
 
   TIPOS: [
     { id: 'queda_barreira', nome: 'Queda de barreira' },
@@ -20,6 +20,11 @@ window.CONFIG = {
     { id: 'media',   nome: 'Média',   cor: '#d9a400' },
     { id: 'alta',    nome: 'Alta',    cor: '#ea580c' },
     { id: 'critica', nome: 'Crítica', cor: '#dc2626' },
+  ],
+  SENTIDOS: [
+    { id: 'direita',  nome: 'Direita',  desc: 'sentido crescente do km' },
+    { id: 'esquerda', nome: 'Esquerda', desc: 'sentido decrescente do km' },
+    { id: 'ambos',    nome: 'Ambos',    desc: 'pista simples / os dois sentidos' },
   ],
   PISTA_AFETADA: [
     { id: 'acostamento',   nome: 'Acostamento' },
@@ -49,4 +54,10 @@ CONFIG.nomeSev    = id => (CONFIG.SEVERIDADES.find(t => t.id === id) || {}).nome
 CONFIG.corSev     = id => (CONFIG.SEVERIDADES.find(t => t.id === id) || {}).cor || '#888';
 CONFIG.nomeStatus = id => (CONFIG.STATUS.find(t => t.id === id) || {}).nome || id;
 CONFIG.corStatus  = id => (CONFIG.STATUS.find(t => t.id === id) || {}).cor || '#888';
+CONFIG.nomeSentido = id => {
+  // aceita os valores antigos (crescente/decrescente) de registros já gravados
+  const eq = { crescente: 'direita', decrescente: 'esquerda' };
+  const v = eq[id] || id;
+  return (CONFIG.SENTIDOS.find(t => t.id === v) || {}).nome || v || '—';
+};
 CONFIG.nomePista  = id => (CONFIG.PISTA_AFETADA.find(t => t.id === id) || {}).nome || id;

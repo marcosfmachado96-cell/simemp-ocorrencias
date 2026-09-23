@@ -70,7 +70,10 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
 - Campo "possibilidade de colapso de pista" (destaque vermelho e anel preto no mapa/PDF).
 - km automático: projeta o GPS no trecho mais próximo da malha (até 300 m) e interpola o km oficial.
   Em cruzamentos pode sugerir a rodovia errada — por isso o técnico sempre confirma.
-- Fotos comprimidas no aparelho (~1280 px, JPEG) antes de gravar.
+- Fotos comprimidas no aparelho (~1280 px, JPEG) e **carimbadas** com data/hora, rodovia, km, sentido,
+  município e coordenadas — o carimbo é gravado na imagem ao salvar, quando os dados já estão confirmados.
+- Fotos de acompanhamento podem ser anexadas a qualquer momento enquanto a ocorrência não estiver resolvida.
+- Sentido segue o padrão do SRE: **direita** (km crescente) / **esquerda** (km decrescente) / ambos.
 - Offline: registro fica na fila e o topo mostra "offline · N"; envia sozinho quando voltar o sinal.
 
 ## Como a sincronização funciona (modo supabase)

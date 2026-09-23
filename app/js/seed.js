@@ -47,7 +47,7 @@ window.SEED = {
         observacao: rnd(obs[tipo]),
         atendimento: null, resolvida_em: null, historico: [],
       };
-      const fAb = await STORE._put('fotos', { id: STORE.uuid(), oc_id: oc.id, fase: 'abertura', blob: await FOTOS.fake(CONFIG.nomeTipo(tipo), '#7c6f64'), em: oc.criado_em }).then(id => id);
+      const fAb = await STORE._put('fotos', { id: STORE.uuid(), oc_id: oc.id, fase: 'abertura', blob: await FOTOS.carimbar(await FOTOS.fake(CONFIG.nomeTipo(tipo), '#7c6f64'), FOTOS.linhasCarimbo({ em: oc.criado_em, rodovia: oc.rodovia, km: oc.km, sentido: oc.sentido, municipio: oc.municipio, lat: oc.lat, lng: oc.lng, precisao: oc.precisao })), em: oc.criado_em }).then(id => id);
       oc.historico.push({ em: oc.criado_em, por: tec.nome, status: 'aberta', texto: oc.observacao, fotos: [fAb] });
 
       if (status !== 'aberta') {

@@ -41,8 +41,9 @@ def simplify(pts, tol):
     return [p for p, k in zip(pts, keep) if k]
 
 def sentido(pista):
-    if pista.startswith("Direita"): return "crescente"
-    if pista.startswith("Esquerda"): return "decrescente"
+    # SRE: "Direita - sentido crescente da rodovia" / "Esquerda - sentido decrescente"
+    if pista.startswith("Direita"): return "direita"
+    if pista.startswith("Esquerda"): return "esquerda"
     return "ambos"
 
 def build(filtro, tol, completo):
