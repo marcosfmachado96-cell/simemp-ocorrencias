@@ -90,19 +90,42 @@
   L.tileLayer(CONFIG.TILES, { maxZoom: 19, attribution: CONFIG.TILES_ATTR }).addTo(mapa);
   const camadaMalha = L.geoJSON(GEO.getMalha(), { style: f => ({ color: '#2a63b0', weight: f.properties.sentido === 'ambos' ? 2.4 : 1.8, opacity: .55 }),
     onEachFeature: (f, l) => l.bindTooltip(`<b>${f.properties.rod}</b> · km ${f.properties.km_ini}–${f.properties.km_fim}`, { sticky: true, className: 'marker-tip' }) }).addTo(mapa);
-  const enquadrar = () => { mapa.invalidateSize(); mapa.fitBounds(camadaMalha.getBounds(), { padding: [24, 24] }); };
+  let visiveis = [];
+  const enquadrar = () => {
+    mapa.invalidateSize();
+    const pts = visiveis.filter(o => o.lat).map(o => [o.lat, o.lng]);
+    mapa.fitBounds(pts.length >= 2 ? L.latLngBounds(pts) : camadaMalha.getBounds(), { padding: [28, 28], maxZoom: 13 });
+  };
   enquadrar(); setTimeout(enquadrar, 400);
   window.addEventListener('resize', () => mapa.invalidateSize());
   fetch('data/malha_pr.geojson').then(r => r.json()).then(g => L.geoJSON(g, { style: { color: '#9aa4b2', weight: 1, opacity: .3 }, interactive: false }).addTo(mapa).bringToBack()).catch(() => {});
   const camadaPts = L.layerGroup().addTo(mapa);
   const marcadores = new Map();
 
+  // ---------- abas Lista / Mapa (telas estreitas) ----------
+  let mapaJaAberto = false;
+  function irAba(nome) {
+    document.body.dataset.aba = nome;
+    document.querySelectorAll('#abas button').forEach(b => b.classList.toggle('ativo', b.dataset.aba === nome));
+    if (nome !== 'mapa') return;
+    // o mapa foi criado com o container oculto: recalcula tamanho e enquadramento
+    setTimeout(() => {
+      mapa.invalidateSize();
+      if (!mapaJaAberto) { mapaJaAberto = true; enquadrar(); }
+    }, 80);
+  }
+  document.querySelectorAll('#abas button').forEach(b => {
+    b.innerHTML = (b.dataset.aba === 'mapa' ? I.pin : I.inbox) + b.textContent;
+    b.onclick = () => irAba(b.dataset.aba);
+  });
+  irAba('lista');
+
   // legenda
   $('#leg-sev').innerHTML = CONFIG.SEVERIDADES.map(s => `<div class="it"><span class="pt" style="background:${s.cor}"></span>${s.nome}</div>`).join('');
   $('#leg-status').innerHTML = CONFIG.STATUS.map(s => `<div class="it"><span class="pt borda" style="--c:${s.cor}"></span>${s.nome}</div>`).join('');
 
   // ---------- render ----------
-  let todas = [], visiveis = [], selecionada = null;
+  let todas = [], selecionada = null;
   async function render() {
     todas = await STORE.listar();
     visiveis = aplicarFiltro(todas);
@@ -162,6 +185,13 @@
     if (m && centrar) mapa.flyTo(m.getLatLng(), Math.max(mapa.getZoom(), 13), { duration: .6 });
     if (m) m.openTooltip();
   }
+  // botão "ver no mapa" dentro do detalhe, útil no celular
+  function verNoMapa(id) {
+    irAba('mapa');
+    const m = marcadores.get(id);
+    if (m) setTimeout(() => { mapa.flyTo(m.getLatLng(), Math.max(mapa.getZoom(), 14), { duration: .6 }); m.openTooltip(); }, 120);
+    $('#detalhe').classList.add('oculto');
+  }
 
   function blocoAtendimento(at) {
     if (!at) return '';
@@ -196,6 +226,7 @@
       </div>`;
     c.appendChild(cab);
     cab.querySelector('#btn-fechar').onclick = () => { selecionada = null; c.classList.add('oculto'); renderLista(); };
+    if (o.lat) { const bm = el('button', 'btn sec bloco', I.pin + 'Ver no mapa'); bm.style.margin = '12px 0 0'; bm.onclick = () => verNoMapa(o.id); cab.appendChild(bm); }
     c.appendChild(el('div', 'secao-titulo', 'Histórico'));
     const t = el('div', 'timeline');
     for (const ev of o.historico) {

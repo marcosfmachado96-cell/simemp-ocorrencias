@@ -73,6 +73,8 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
 - Fotos comprimidas no aparelho (~1280 px, JPEG) e **carimbadas** com data/hora, rodovia, km, sentido,
   município e coordenadas num bloco no canto inferior direito — gravado na imagem ao salvar, quando os dados já estão confirmados.
 - Fotos de acompanhamento podem ser anexadas a qualquer momento enquanto a ocorrência não estiver resolvida.
+- Painel em celular: abas **Lista / Mapa** (em telas com menos de 820 px), indicadores em faixa rolável
+  e botão "Ver no mapa" no detalhe.
 - Sentido segue o padrão do SRE: **direita** (km crescente) / **esquerda** (km decrescente) / ambos.
 - Offline: registro fica na fila e o topo mostra "offline · N"; envia sozinho quando voltar o sinal.
 

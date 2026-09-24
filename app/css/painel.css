@@ -64,16 +64,40 @@ body.painel .topo .btn.amarelo { box-shadow: 0 4px 14px -4px rgba(242,169,0,.6);
 .detalhe .fotos-grid .foto { cursor: zoom-in; }
 .detalhe .secao-titulo { margin-top: 18px; }
 
+/* ---------- abas Lista / Mapa (só em telas estreitas) ---------- */
+.abas { display: none; }
+
 @media (max-width: 1180px) {
   /* telas médias: o detalhe sobrepõe o mapa em vez de espremê-lo */
   .detalhe { position: absolute; right: 0; top: 0; bottom: 0; z-index: 600; width: min(440px, 70%); }
 }
-@media (max-width: 720px) {
+@media (max-width: 820px) {
+  body.painel .topo { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+  body.painel .topo h1 { font-size: 15px; }
+  body.painel .topo h1 small { display: none; }
+  body.painel .topo .btn { padding: 8px 12px; font-size: 13px; }
+
+  /* indicadores em faixa rolável, compactos */
+  .kpis { display: flex; overflow-x: auto; gap: 8px; padding: 10px 12px; scrollbar-width: none; }
+  .kpis::-webkit-scrollbar { display: none; }
+  .kpi { flex: 0 0 auto; padding: 8px 12px; gap: 9px; }
+  .kpi b { font-size: 18px; }
+  .kpi span { font-size: 10px; white-space: nowrap; }
+
+  .abas { display: flex; background: var(--surface); border-bottom: 1px solid var(--line); padding: 8px 12px 0; gap: 4px; }
+  .abas button { flex: 1; border: 0; background: transparent; padding: 10px 8px; font-weight: 600; font-size: 13.5px; color: var(--muted); border-bottom: 2.5px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .abas button.ativo { color: var(--navy-800); border-bottom-color: var(--navy-800); }
+  .abas button .ico { width: 16px; height: 16px; }
+
   .corpo { flex-direction: column; }
-  .lateral { width: auto; max-height: 45vh; }
+  .lateral, .mapa-wrap { width: auto; flex: 1 1 auto; min-height: 0; border-right: 0; }
+  body.painel[data-aba="mapa"] .lateral { display: none; }
+  body.painel[data-aba="lista"] .mapa-wrap { display: none; }
+  .legenda { right: 10px; bottom: 16px; padding: 8px 10px; font-size: 11px; }
   .detalhe { position: fixed; inset: 0; width: auto; z-index: 900; }
-  .kpis { grid-template-columns: repeat(2, 1fr); padding: 10px 12px; }
-  .kpi { padding: 8px 10px; }
+  .usuarios-grid { grid-template-columns: 1fr; }
+  .modal-fundo.centro { padding: 10px; }
+}
 }
 
 /* ---------- modal centralizado (painel) ---------- */
