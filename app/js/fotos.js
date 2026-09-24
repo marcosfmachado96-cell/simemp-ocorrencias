@@ -11,7 +11,7 @@ window.FOTOS = {
     return new Promise(res => c.toBlob(b => res(b || file), 'image/jpeg', qualidade));
   },
 
-  // Grava na imagem uma tarja com as informações da ocorrência.
+  // Grava na imagem um bloco com as informações da ocorrência, no canto inferior direito.
   // linhas: array de arrays de texto (cada array interna é uma linha, os itens são separados por ·)
   async carimbar(blob, linhas) {
     const bmp = await createImageBitmap(blob).catch(() => null);
@@ -25,41 +25,51 @@ window.FOTOS = {
     if (!textos.length) return blob;
 
     const base = Math.min(c.width, c.height);
-    const fonte = Math.max(11, Math.round(base * 0.030));      // corpo do texto
-    const fonteT = Math.round(fonte * 1.16);                   // primeira linha (destaque)
-    const pad = Math.round(fonte * 0.62);
-    const alturaLinha = Math.round(fonte * 1.42);
-    const alturaTarja = pad * 2 + alturaLinha * textos.length;
-    const y0 = c.height - alturaTarja;
+    const margem = Math.round(base * 0.025);
+    const fam = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+    const fonteDe = t => (t.destaque ? '600 ' + t.tam : '400 ' + t.tam) + 'px ' + fam;
 
-    // tarja escura com leve degradê para o texto não brigar com a imagem
-    const grad = g.createLinearGradient(0, y0 - alturaLinha * 0.5, 0, c.height);
-    grad.addColorStop(0, 'rgba(11,31,58,0)');
-    grad.addColorStop(0.35, 'rgba(11,31,58,0.62)');
-    grad.addColorStop(1, 'rgba(11,31,58,0.82)');
-    g.fillStyle = grad;
-    g.fillRect(0, y0 - alturaLinha * 0.5, c.width, alturaTarja + alturaLinha * 0.5);
-    // filete âmbar no topo da tarja
+    // ajusta o tamanho da fonte para o bloco caber na largura disponível
+    let fonte = Math.max(11, Math.round(base * 0.030));
+    let itens, larguraTexto, pad;
+    for (let tentativa = 0; tentativa < 8; tentativa++) {
+      pad = Math.round(fonte * 0.75);
+      itens = textos.map((t, i) => ({ texto: t, destaque: i === 0, tam: i === 0 ? Math.round(fonte * 1.14) : fonte }));
+      larguraTexto = Math.max(...itens.map(t => { g.font = fonteDe(t); return g.measureText(t.texto).width; }));
+      if (larguraTexto + pad * 2 <= c.width - margem * 2 || fonte <= 11) break;
+      fonte = Math.round(fonte * 0.9);
+    }
+    const alturaLinha = Math.round(fonte * 1.45);
+    const largura = larguraTexto + pad * 2;
+    const altura = alturaLinha * itens.length + pad * 1.7;
+    const x = c.width - margem - largura;
+    const y = c.height - margem - altura;
+    const raio = Math.round(fonte * 0.45);
+
+    // caixa escura translúcida, com filete âmbar à esquerda
+    g.fillStyle = 'rgba(11,31,58,0.74)';
+    if (g.roundRect) { g.beginPath(); g.roundRect(x, y, largura, altura, raio); g.fill(); }
+    else g.fillRect(x, y, largura, altura);
     g.fillStyle = '#f2a900';
-    g.fillRect(0, y0, c.width, Math.max(2, Math.round(base * 0.004)));
+    g.fillRect(x, y + raio, Math.max(2, Math.round(base * 0.005)), altura - raio * 2);
 
-    g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = Math.round(fonte * 0.35);
-    textos.forEach((t, i) => {
-      g.font = (i === 0 ? '600 ' + fonteT : '400 ' + fonte) + 'px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-      g.fillStyle = i === 0 ? '#ffffff' : 'rgba(255,255,255,.92)';
-      g.fillText(t, pad * 1.4, y0 + pad + alturaLinha * i + alturaLinha / 2);
+    g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = Math.round(fonte * 0.3);
+    itens.forEach((t, i) => {
+      g.font = fonteDe(t);
+      g.fillStyle = t.destaque ? '#ffffff' : 'rgba(255,255,255,.90)';
+      g.fillText(t.texto, x + largura - pad, y + pad * 0.85 + alturaLinha * i + alturaLinha / 2);
     });
     g.shadowBlur = 0;
 
     // selo do sistema no canto superior direito
-    g.font = '600 ' + Math.round(fonte * 0.82) + 'px system-ui, sans-serif';
-    g.textAlign = 'right';
-    const selo = 'SIMEMP', larg = g.measureText(selo).width + pad * 1.6, alt = fonte * 1.7;
+    g.font = '600 ' + Math.round(fonte * 0.82) + 'px ' + fam;
+    const selo = 'SIMEMP', largSelo = g.measureText(selo).width + pad * 1.4, altSelo = Math.round(fonte * 1.75);
     g.fillStyle = 'rgba(11,31,58,.6)';
-    g.fillRect(c.width - larg - pad, pad, larg, alt);
+    if (g.roundRect) { g.beginPath(); g.roundRect(c.width - margem - largSelo, margem, largSelo, altSelo, raio * 0.7); g.fill(); }
+    else g.fillRect(c.width - margem - largSelo, margem, largSelo, altSelo);
     g.fillStyle = 'rgba(255,255,255,.95)';
-    g.fillText(selo, c.width - pad * 1.8, pad + alt / 2);
+    g.fillText(selo, c.width - margem - pad * 0.7, margem + altSelo / 2);
 
     return new Promise(res => c.toBlob(b => res(b || blob), 'image/jpeg', 0.78));
   },
