@@ -73,6 +73,8 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
 - Fotos comprimidas no aparelho (~1280 px, JPEG) e **carimbadas** com data/hora, rodovia, km, sentido,
   município e coordenadas num bloco no canto inferior direito — gravado na imagem ao salvar, quando os dados já estão confirmados.
 - Fotos de acompanhamento podem ser anexadas a qualquer momento enquanto a ocorrência não estiver resolvida.
+- Relatório PDF: registro fotográfico traz **a primeira e a última foto** de cada ocorrência (por data de captura),
+  com a fase e o horário; se houver mais, avisa o total.
 - **Edição pelo gestor**: no painel, ocorrências não resolvidas podem ter rodovia, km, sentido, município,
   tipo, severidade, pista afetada, risco de colapso e observação corrigidos. Cada alteração entra no histórico
   (quem, quando, valor anterior → novo). Coordenadas e fotos originais não são alteradas.

@@ -156,24 +156,35 @@ window.RELATORIO = (() => {
     if (incluirFotos) {
       doc.addPage(); y = 16;
       doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text('Registro fotográfico', M, y); doc.setFont(undefined, 'normal'); y += 6;
-      const fw = (W - 2 * M - 6) / 3, fh = fw * 0.66;
+      const fw = (W - 2 * M - 6) / 2.4, fh = fw * 0.7;
+      const FASE = { abertura: 'abertura', acompanhamento: 'acompanhamento', atendimento: 'atendimento', comprovacao: 'comprovação' };
       let semImagem = 0;
       for (const o of ordenadas) {
-        const fotos = await STORE.fotosDe(o.id);
-        const ab = fotos.find(f => f.fase === 'abertura'), co = fotos.find(f => f.fase === 'comprovacao');
-        if (!ab && !co) continue;
-        const imgAb = await fotoDataUrl(ab), imgCo = await fotoDataUrl(co);
-        if (!imgAb && !imgCo) { semImagem++; continue; }   // sem conexão para baixar a foto
+        // primeira e última foto tiradas (a data de cada foto é a da captura)
+        const fotos = (await STORE.fotosDe(o.id)).slice().sort((a, b) => String(a.em).localeCompare(String(b.em)));
+        if (!fotos.length) continue;
+        const primeira = fotos[0], ultima = fotos.length > 1 ? fotos[fotos.length - 1] : null;
+        const img1 = await fotoDataUrl(primeira), img2 = await fotoDataUrl(ultima);
+        if (!img1 && !img2) { semImagem++; continue; }   // sem conexão para baixar a foto
         if (y + fh + 14 > 285) { doc.addPage(); y = 16; }
         doc.setFontSize(9); doc.setFont(undefined, 'bold');
         doc.text(`${o.rodovia} · km ${Number(o.km).toFixed(2).replace('.', ',')} — ${CONFIG.nomeTipo(o.tipo)} (${CONFIG.nomeSev(o.severidade)}) · ${CONFIG.nomeStatus(o.status)} · ${fmtData(o.criado_em)}`, M, y);
         doc.setFont(undefined, 'normal'); doc.setFontSize(7); doc.setTextColor(100); y += 4;
-        doc.text(imgAb ? 'Abertura' : '', M, y); doc.text(imgCo ? 'Comprovação' : '', M + fw + 3, y); doc.setTextColor(30); y += 1.5;
+        const rotulo = (f, quando) => f ? `${quando} · ${fmtData(f.em)}${FASE[f.fase] ? ' (' + FASE[f.fase] + ')' : ''}` : '';
+        doc.text(img1 ? rotulo(primeira, fotos.length > 1 ? 'Primeira foto' : 'Foto') : '', M, y);
+        doc.text(img2 ? rotulo(ultima, 'Última foto') : '', M + fw + 3, y);
+        doc.setTextColor(30); y += 1.5;
         try {
-          if (imgAb) doc.addImage(imgAb, 'JPEG', M, y, fw, fh);
-          if (imgCo) doc.addImage(imgCo, 'JPEG', M + fw + 3, y, fw, fh);
+          if (img1) doc.addImage(img1, 'JPEG', M, y, fw, fh);
+          if (img2) doc.addImage(img2, 'JPEG', M + fw + 3, y, fw, fh);
         } catch (e) { semImagem++; }
-        y += fh + 6;
+        if (fotos.length > 2) {
+          doc.setFontSize(6.5); doc.setTextColor(150);
+          doc.text(`(${fotos.length} fotos no total — as demais estão no painel)`, M, y + fh + 3);
+          doc.setTextColor(30);
+          y += 3;
+        }
+        y += fh + 7;
       }
       if (semImagem) {
         doc.setFontSize(8); doc.setTextColor(150);
