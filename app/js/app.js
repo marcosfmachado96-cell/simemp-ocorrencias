@@ -33,7 +33,17 @@
   $('#banner-demo').classList.toggle('oculto', CONFIG.MODO !== 'local');
 
   // ---------- service worker ----------
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // registra o service worker e recarrega uma vez quando uma versão nova assume
+  if ('serviceWorker' in navigator) {
+    let recarregando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recarregando) return; recarregando = true; location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();
+      setInterval(() => reg.update(), 30 * 60 * 1000); // procura atualização a cada 30 min
+    }).catch(() => {});
+  }
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   if (!standalone && /iPhone|iPad|Android/i.test(navigator.userAgent)) $('#banner-instalar').classList.remove('oculto');
 

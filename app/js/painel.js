@@ -10,6 +10,18 @@
 
   $('#btn-pdf').innerHTML = I.file + 'Relatório PDF';
 
+  // service worker: recarrega uma vez quando uma versão nova assume
+  if ('serviceWorker' in navigator) {
+    let recarregando = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (recarregando) return; recarregando = true; location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();
+      setInterval(() => reg.update(), 30 * 60 * 1000);
+    }).catch(() => {});
+  }
+
   await STORE.init();
   await GEO.carregar('data/malha_leste.geojson');
   if (CONFIG.MODO === 'local' && !(await STORE.meta('seed'))) await SEED.gerar(28);

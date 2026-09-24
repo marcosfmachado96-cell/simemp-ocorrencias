@@ -27,8 +27,17 @@ Para corrigir uma ocorrência já resolvida, reabra-a no banco ou peça para o t
 
 ## Atualizar o sistema
 
-Qualquer alteração em `app/` publicada com `git push` na branch `main` vai ao ar em ~1 minuto (GitHub Actions).
-Os celulares pegam a versão nova na próxima abertura com sinal.
+Antes de publicar, suba a versão em `app/js/config.js` (`VERSAO`) e rode:
+
+```bash
+python ferramentas/versionar.py
+```
+
+Isso carimba a versão em todos os scripts e estilos (`js/app.js?v=1.4.2`) e no cache do service worker,
+para que o navegador nunca sirva uma mistura de versões. Depois, `git push` na branch `main` publica em ~1 minuto.
+
+Celulares e painéis abertos detectam a versão nova e se recarregam sozinhos (verificação a cada 30 min
+e a cada abertura do app).
 
 ---
 
