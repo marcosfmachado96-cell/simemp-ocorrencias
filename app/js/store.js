@@ -153,6 +153,32 @@ window.STORE = (() => {
     return oc;
   }
 
+  // Edição pelo gestor: grava as mudanças e registra no histórico quem alterou o quê.
+  const CAMPOS_EDITAVEIS = ['rodovia', 'km', 'sentido', 'municipio', 'tipo', 'severidade', 'pista_afetada', 'risco_colapso', 'observacao'];
+  async function editar(id, campos) {
+    const oc = await get('ocorrencias', id);
+    if (!oc) throw new Error('Ocorrência não encontrada');
+    if (oc.status === 'resolvida') throw new Error('Ocorrência resolvida não pode ser editada.');
+    const u = usuarioAtual();
+    const mudancas = [], novos = {};
+    for (const c of CAMPOS_EDITAVEIS) {
+      if (!(c in campos)) continue;
+      const antes = oc[c], depois = campos[c];
+      if (String(antes == null ? '' : antes) === String(depois == null ? '' : depois)) continue;
+      mudancas.push({ campo: c, de: antes, para: depois });
+      novos[c] = depois;
+    }
+    if (!mudancas.length) return { oc, mudancas };
+    Object.assign(oc, novos);
+    const evento = { em: agora(), por: u ? u.nome : '?', status: oc.status, tipo_evento: 'edicao', mudancas, fotos: [] };
+    oc.historico.push(evento);
+    oc.sync = 'pendente';
+    await put('ocorrencias', oc);
+    await enfileirar({ tipo: 'editar', oc_id: id, campos: novos, evento });
+    notificar();
+    return { oc, mudancas };
+  }
+
   async function fotosDe(oc_id) { return getAll('fotos', 'oc_id', oc_id); }
   async function foto(id) { return get('fotos', id); }
   const urls = new Map();
@@ -201,6 +227,6 @@ window.STORE = (() => {
     return db;
   }
 
-  return { init, uuid, usuarioAtual, login, logout, listar, obter, criar, atualizar, fotosDe, foto, fotoUrl,
+  return { init, uuid, usuarioAtual, login, logout, listar, obter, criar, atualizar, editar, fotosDe, foto, fotoUrl,
            pendentes, fila, concluirItem, sincronizar, onChange, notificar, receber, marcarEnviada, limparTudo, meta, _put: put };
 })();

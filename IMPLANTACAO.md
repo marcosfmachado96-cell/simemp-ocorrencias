@@ -19,6 +19,12 @@ Pelo próprio painel, logado como gestor: botão **Usuários** no topo.
 
 Instalar no celular: abrir o endereço do app → menu do navegador → **Adicionar à tela de início** → entrar com e-mail e senha.
 
+## Corrigir uma ocorrência
+
+No painel, abra a ocorrência e clique em **Editar** (só gestor, só enquanto não estiver resolvida).
+A correção fica registrada no histórico com seu nome, mostrando o valor anterior e o novo.
+Para corrigir uma ocorrência já resolvida, reabra-a no banco ou peça para o técnico registrar uma nova.
+
 ## Atualizar o sistema
 
 Qualquer alteração em `app/` publicada com `git push` na branch `main` vai ao ar em ~1 minuto (GitHub Actions).

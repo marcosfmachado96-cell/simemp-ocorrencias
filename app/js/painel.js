@@ -226,12 +226,21 @@
       </div>`;
     c.appendChild(cab);
     cab.querySelector('#btn-fechar').onclick = () => { selecionada = null; c.classList.add('oculto'); renderLista(); };
-    if (o.lat) { const bm = el('button', 'btn sec bloco', I.pin + 'Ver no mapa'); bm.style.margin = '12px 0 0'; bm.onclick = () => verNoMapa(o.id); cab.appendChild(bm); }
+    const acoes = el('div', 'acoes-detalhe');
+    if (o.lat) { const bm = el('button', 'btn sec', I.pin + 'Ver no mapa'); bm.onclick = () => verNoMapa(o.id); acoes.appendChild(bm); }
+    if (STORE.usuarioAtual().perfil === 'gestor' && o.status !== 'resolvida') {
+      const be = el('button', 'btn sec', I.edit + 'Editar'); be.onclick = () => modalEditar(o); acoes.appendChild(be);
+    }
+    if (acoes.children.length) cab.appendChild(acoes);
     c.appendChild(el('div', 'secao-titulo', 'Histórico'));
     const t = el('div', 'timeline');
     for (const ev of o.historico) {
       const d = el('div', 'ev'); d.style.setProperty('--cor', CONFIG.corStatus(ev.status));
-      d.innerHTML = `<div class="quando">${fmtData(ev.em)} · ${esc(ev.por)}</div><div class="oque">${esc(CONFIG.nomeStatus(ev.status))}</div>${ev.texto ? `<div class="texto">${esc(ev.texto)}</div>` : ''}${blocoAtendimento(ev.atendimento)}`;
+      if (ev.tipo_evento === 'edicao') d.style.setProperty('--cor', '#6b7280');
+      d.innerHTML = `<div class="quando">${fmtData(ev.em)} · ${esc(ev.por)}</div>
+        <div class="oque">${ev.tipo_evento === 'edicao' ? 'Ocorrência editada' : esc(CONFIG.nomeStatus(ev.status))}</div>
+        ${ev.tipo_evento === 'edicao' ? blocoMudancas(ev.mudancas) : ''}
+        ${ev.texto ? `<div class="texto">${esc(ev.texto)}</div>` : ''}${blocoAtendimento(ev.atendimento)}`;
       if (ev.fotos && ev.fotos.length) {
         const g = el('div', 'fotos-grid');
         for (const fid of ev.fotos) { const u = await STORE.fotoUrl(fid); if (!u) continue; const img = el('img', 'foto'); img.src = u; img.onclick = () => { const v = el('div', 'visualizador'); v.innerHTML = `<img src="${u}">`; v.onclick = () => v.remove(); document.body.appendChild(v); }; g.appendChild(img); }
@@ -342,6 +351,71 @@
       }
       formNovo(); carregar();
     });
+  }
+
+  // ---------- edição da ocorrência (gestor) ----------
+  const ROTULO = { rodovia: 'Rodovia', km: 'km', sentido: 'Sentido', municipio: 'Município', tipo: 'Tipo',
+    severidade: 'Severidade', pista_afetada: 'Pista afetada', risco_colapso: 'Risco de colapso', observacao: 'Observação' };
+  function valorLegivel(campo, v) {
+    if (v === null || v === undefined || v === '') return '—';
+    if (campo === 'tipo') return CONFIG.nomeTipo(v);
+    if (campo === 'severidade') return CONFIG.nomeSev(v);
+    if (campo === 'sentido') return CONFIG.nomeSentido(v);
+    if (campo === 'pista_afetada') return CONFIG.nomePista(v);
+    if (campo === 'risco_colapso') return v ? 'Sim' : 'Não';
+    if (campo === 'km') return Number(v).toFixed(2).replace('.', ',');
+    return String(v);
+  }
+  function blocoMudancas(ms) {
+    if (!ms || !ms.length) return '';
+    return `<div class="mudancas">${ms.map(m => `<div><b>${esc(ROTULO[m.campo] || m.campo)}:</b> <span class="de">${esc(valorLegivel(m.campo, m.de))}</span> ${I.arrowRight} <span class="para">${esc(valorLegivel(m.campo, m.para))}</span></div>`).join('')}</div>`;
+  }
+
+  function modalEditar(o) {
+    const ops = (lista, atual) => lista.map(x => `<option value="${x.id}" ${x.id === atual ? 'selected' : ''}>${esc(x.nome)}</option>`).join('');
+    modal('Editar ocorrência', m => {
+      m.innerHTML = `
+        <div class="linha-campos">
+          <div class="campo"><label>Rodovia</label><select id="e-rod">${GEO.rodovias().map(r => `<option ${r === o.rodovia ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select></div>
+          <div class="campo"><label>km</label><input type="number" id="e-km" step="0.01" value="${Number(o.km).toFixed(2)}"></div>
+          <div class="campo"><label>Sentido</label><select id="e-sent">${ops(CONFIG.SENTIDOS, o.sentido === 'crescente' ? 'direita' : o.sentido === 'decrescente' ? 'esquerda' : o.sentido)}</select></div>
+        </div>
+        <div class="linha-campos">
+          <div class="campo"><label>Tipo</label><select id="e-tipo">${ops(CONFIG.TIPOS, o.tipo)}</select></div>
+          <div class="campo"><label>Severidade</label><select id="e-sev">${ops(CONFIG.SEVERIDADES, o.severidade)}</select></div>
+        </div>
+        <div class="linha-campos">
+          <div class="campo"><label>Pista afetada</label><select id="e-pista">${ops(CONFIG.PISTA_AFETADA, o.pista_afetada)}</select></div>
+          <div class="campo"><label>Município</label><input type="text" id="e-mun" value="${esc(o.municipio || '')}"></div>
+        </div>
+        <div class="campo"><label class="toggle ${o.risco_colapso ? 'on' : ''}" id="e-colapso-wrap"><span>${I.alert}Possibilidade de colapso de pista</span><input type="checkbox" id="e-colapso" ${o.risco_colapso ? 'checked' : ''}></label></div>
+        <div class="campo"><label>Observação</label><textarea id="e-obs">${esc(o.observacao || '')}</textarea></div>
+        <div class="nota-edicao">${I.alert}A alteração fica registrada no histórico com seu nome. As coordenadas e as fotos do registro original não são alteradas.</div>
+        <div class="erro-login oculto" id="e-erro"></div>
+        <div class="linha-campos" style="margin-top:4px">
+          <button class="btn sec" id="e-cancelar" style="flex:1">Cancelar</button>
+          <button class="btn" id="e-salvar" style="flex:2">${I.check}Salvar alterações</button>
+        </div>`;
+      m.querySelector('#e-colapso').onchange = e => m.querySelector('#e-colapso-wrap').classList.toggle('on', e.target.checked);
+      m.querySelector('#e-cancelar').onclick = fecharModal;
+      m.querySelector('#e-salvar').onclick = async () => {
+        const erro = m.querySelector('#e-erro'); erro.classList.add('oculto');
+        const km = parseFloat(m.querySelector('#e-km').value);
+        if (isNaN(km)) { erro.textContent = 'Informe um km válido.'; erro.classList.remove('oculto'); return; }
+        const b = m.querySelector('#e-salvar'); b.disabled = true;
+        try {
+          const { mudancas } = await STORE.editar(o.id, {
+            rodovia: m.querySelector('#e-rod').value, km, sentido: m.querySelector('#e-sent').value,
+            municipio: m.querySelector('#e-mun').value.trim(), tipo: m.querySelector('#e-tipo').value,
+            severidade: m.querySelector('#e-sev').value, pista_afetada: m.querySelector('#e-pista').value,
+            risco_colapso: m.querySelector('#e-colapso').checked, observacao: m.querySelector('#e-obs').value.trim(),
+          });
+          fecharModal();
+          toast(mudancas.length ? `${mudancas.length} alteração(ões) salva(s)` : 'Nada foi alterado');
+          render();
+        } catch (e) { erro.textContent = e.message; erro.classList.remove('oculto'); b.disabled = false; }
+      };
+    }, '620px');
   }
 
   // ---------- relatório ----------

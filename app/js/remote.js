@@ -80,6 +80,9 @@ window.REMOTE = (() => {
         const { error } = await cliente().from('ocorrencias').upsert(inicial);
         if (error) throw error;
         await subirFotosDe(inicial.historico[0] && inicial.historico[0].fotos);
+      } else if (op.tipo === 'editar') {
+        const { error } = await cliente().rpc('editar_ocorrencia', { p_oc_id: op.oc_id, p_campos: op.campos, p_evento: op.evento });
+        if (error) throw error;
       } else if (op.tipo === 'atualizar') {
         await subirFotosDe(op.evento.fotos);
         const { error } = await cliente().rpc('registrar_evento', {

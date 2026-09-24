@@ -32,6 +32,7 @@ window.ICONS = (() => {
     mail: w('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/>'),
     userPlus: w('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>'),
     power: w('<path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>'),
+    arrowRight: w('<path d="M5 12h14M13 6l6 6-6 6"/>'),
     checkCircle: w('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'),
   };
 })();
