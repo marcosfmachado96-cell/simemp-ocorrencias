@@ -40,6 +40,31 @@ window.RELATORIO = (() => {
 
   async function blobParaDataUrl(blob) { return new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); }); }
 
+  // A foto pode estar no aparelho (blob) ou só no servidor (url): resolve os dois casos
+  // e reduz a imagem ao tamanho em que ela aparece no PDF, para o arquivo não ficar pesado.
+  const cacheFotos = new Map();
+  async function reduzir(blob, maxLado = 760, qualidade = 0.68) {
+    const bmp = await createImageBitmap(blob).catch(() => null);
+    if (!bmp) return blob;
+    if (Math.max(bmp.width, bmp.height) <= maxLado) return blob;
+    const esc = maxLado / Math.max(bmp.width, bmp.height);
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * esc); c.height = Math.round(bmp.height * esc);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return new Promise(res => c.toBlob(b => res(b || blob), 'image/jpeg', qualidade));
+  }
+  async function fotoDataUrl(f) {
+    if (!f) return null;
+    if (cacheFotos.has(f.id)) return cacheFotos.get(f.id);
+    let blob = f.blob;
+    if (!blob && f.url) {
+      try { const r = await fetch(f.url, { cache: 'force-cache' }); if (r.ok) blob = await r.blob(); } catch (e) { blob = null; }
+    }
+    const url = blob ? await blobParaDataUrl(await reduzir(blob)) : null;
+    cacheFotos.set(f.id, url);
+    return url;
+  }
+
   async function gerar(ocs, filtro) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -132,18 +157,28 @@ window.RELATORIO = (() => {
       doc.addPage(); y = 16;
       doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text('Registro fotográfico', M, y); doc.setFont(undefined, 'normal'); y += 6;
       const fw = (W - 2 * M - 6) / 3, fh = fw * 0.66;
+      let semImagem = 0;
       for (const o of ordenadas) {
         const fotos = await STORE.fotosDe(o.id);
         const ab = fotos.find(f => f.fase === 'abertura'), co = fotos.find(f => f.fase === 'comprovacao');
         if (!ab && !co) continue;
+        const imgAb = await fotoDataUrl(ab), imgCo = await fotoDataUrl(co);
+        if (!imgAb && !imgCo) { semImagem++; continue; }   // sem conexão para baixar a foto
         if (y + fh + 14 > 285) { doc.addPage(); y = 16; }
         doc.setFontSize(9); doc.setFont(undefined, 'bold');
         doc.text(`${o.rodovia} · km ${Number(o.km).toFixed(2).replace('.', ',')} — ${CONFIG.nomeTipo(o.tipo)} (${CONFIG.nomeSev(o.severidade)}) · ${CONFIG.nomeStatus(o.status)} · ${fmtData(o.criado_em)}`, M, y);
         doc.setFont(undefined, 'normal'); doc.setFontSize(7); doc.setTextColor(100); y += 4;
-        doc.text('Abertura', M, y); doc.text(co ? 'Comprovação' : '', M + fw + 3, y); doc.setTextColor(30); y += 1.5;
-        if (ab) doc.addImage(await blobParaDataUrl(ab.blob), 'JPEG', M, y, fw, fh);
-        if (co) doc.addImage(await blobParaDataUrl(co.blob), 'JPEG', M + fw + 3, y, fw, fh);
+        doc.text(imgAb ? 'Abertura' : '', M, y); doc.text(imgCo ? 'Comprovação' : '', M + fw + 3, y); doc.setTextColor(30); y += 1.5;
+        try {
+          if (imgAb) doc.addImage(imgAb, 'JPEG', M, y, fw, fh);
+          if (imgCo) doc.addImage(imgCo, 'JPEG', M + fw + 3, y, fw, fh);
+        } catch (e) { semImagem++; }
         y += fh + 6;
+      }
+      if (semImagem) {
+        doc.setFontSize(8); doc.setTextColor(150);
+        doc.text(`${semImagem} ocorrência(s) sem foto disponível no momento da geração (sem conexão).`, M, y + 2);
+        doc.setTextColor(30);
       }
     }
 

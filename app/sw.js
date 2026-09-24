@@ -1,5 +1,5 @@
 // Service worker: deixa o app disponível sem sinal (app shell + malha + bibliotecas)
-const CACHE = 'simemp-v1.4.0';
+const CACHE = 'simemp-v1.4.1';
 const ARQUIVOS = [
   './', './index.html', './painel.html', './manifest.webmanifest',
   './css/app.css', './css/painel.css',
