@@ -431,12 +431,75 @@
   }
 
   // ---------- relatório ----------
-  $('#btn-pdf').onclick = async () => {
-    const b = $('#btn-pdf'); b.disabled = true; b.innerHTML = I.file + 'Gerando…';
-    try { await RELATORIO.gerar(visiveis, filtro); }
-    catch (e) { alert('Erro ao gerar PDF: ' + e.message); }
-    finally { b.disabled = false; b.innerHTML = I.file + 'Relatório PDF'; }
-  };
+  // tipos escolhidos na última emissão (por padrão, todos)
+  let tiposRelatorio = CONFIG.TIPOS.map(t => t.id);
+
+  $('#btn-pdf').onclick = () => modalRelatorio();
+
+  function modalRelatorio() {
+    modal('Emitir relatório PDF', m => {
+      const escopoTxt = filtro.escopo === 'abertas' ? 'Ocorrências em aberto (situação atual)'
+        : `Período de ${new Date(filtro.de + 'T12:00').toLocaleDateString('pt-BR')} a ${new Date(filtro.ate + 'T12:00').toLocaleDateString('pt-BR')}`;
+      const demais = [filtro.rod && 'rodovia ' + filtro.rod, filtro.status && CONFIG.nomeStatus(filtro.status),
+        filtro.sev && 'severidade ' + CONFIG.nomeSev(filtro.sev), filtro.colapso && 'com risco de colapso'].filter(Boolean);
+      m.innerHTML = `
+        <div class="resumo-emissao">${I.filter}<div><b>${esc(escopoTxt)}</b>${demais.length ? '<br>Filtros do painel: ' + esc(demais.join(' · ')) : ''}</div></div>
+        <div class="campo">
+          <div class="rotulo" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Tipos de ocorrência</span>
+            <span><button class="link-sel" id="r-todos">Todos</button> · <button class="link-sel" id="r-nenhum">Nenhum</button></span>
+          </div>
+          <div class="tipos-check" id="r-tipos"></div>
+        </div>
+        <label class="check" style="margin:2px 0 12px"><input type="checkbox" id="r-fotos" checked> Incluir registro fotográfico (primeira e última foto)</label>
+        <div class="contagem-emissao" id="r-contagem"></div>
+        <div class="linha-campos">
+          <button class="btn sec" id="r-cancelar" style="flex:1">Cancelar</button>
+          <button class="btn amarelo" id="r-gerar" style="flex:2">${I.file}Gerar PDF</button>
+        </div>`;
+
+      const cont = m.querySelector('#r-tipos');
+      CONFIG.TIPOS.forEach(t => {
+        const l = el('label', 'tipo-check');
+        l.innerHTML = `<input type="checkbox" value="${t.id}" ${tiposRelatorio.includes(t.id) ? 'checked' : ''}><span>${esc(t.nome)}</span><b class="qtd"></b>`;
+        cont.appendChild(l);
+      });
+
+      const marcados = () => [...cont.querySelectorAll('input:checked')].map(i => i.value);
+      const selecionadas = () => visiveis.filter(o => marcados().includes(o.tipo));
+      function atualizar() {
+        const n = selecionadas().length;
+        cont.querySelectorAll('input').forEach(i => {
+          i.closest('.tipo-check').querySelector('.qtd').textContent = visiveis.filter(o => o.tipo === i.value).length || '';
+        });
+        const c = m.querySelector('#r-contagem');
+        c.textContent = n ? `${n} ocorrência(s) no relatório` : 'Nenhuma ocorrência com os tipos selecionados';
+        c.className = 'contagem-emissao' + (n ? '' : ' vazio');
+        m.querySelector('#r-gerar').disabled = !n;
+        const fotos = m.querySelector('#r-fotos');
+        fotos.disabled = n > 60;
+        if (n > 60) { fotos.checked = false; }
+      }
+      cont.addEventListener('change', atualizar);
+      m.querySelector('#r-todos').onclick = () => { cont.querySelectorAll('input').forEach(i => i.checked = true); atualizar(); };
+      m.querySelector('#r-nenhum').onclick = () => { cont.querySelectorAll('input').forEach(i => i.checked = false); atualizar(); };
+      m.querySelector('#r-cancelar').onclick = fecharModal;
+      atualizar();
+
+      m.querySelector('#r-gerar').onclick = async () => {
+        tiposRelatorio = marcados();
+        const lista = selecionadas(), comFotos = m.querySelector('#r-fotos').checked;
+        const b = m.querySelector('#r-gerar'); b.disabled = true; b.innerHTML = I.file + 'Gerando…';
+        try {
+          await RELATORIO.gerar(lista, filtro, { tipos: tiposRelatorio, incluirFotos: comFotos });
+          fecharModal(); toast('Relatório gerado');
+        } catch (e) {
+          b.disabled = false; b.innerHTML = I.file + 'Gerar PDF';
+          toast('Erro ao gerar PDF: ' + e.message, true);
+        }
+      };
+    }, '520px');
+  }
 
   render();
 })();

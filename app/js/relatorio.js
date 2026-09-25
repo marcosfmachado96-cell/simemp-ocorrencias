@@ -65,12 +65,13 @@ window.RELATORIO = (() => {
     return url;
   }
 
-  async function gerar(ocs, filtro) {
+  async function gerar(ocs, filtro, opcoes) {
+    opcoes = opcoes || {};
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const W = 210, M = 14;
     const u = STORE.usuarioAtual();
-    const incluirFotos = ocs.length <= 60 && confirm('Incluir fotos (abertura e comprovação) no relatório?');
+    const incluirFotos = opcoes.incluirFotos !== undefined ? opcoes.incluirFotos : ocs.length <= 60;
 
     // ---- cabeçalho ----
     doc.setFillColor(16, 41, 77); doc.rect(0, 0, W, 26, 'F');
@@ -80,9 +81,16 @@ window.RELATORIO = (() => {
     doc.text(`Superintendência Regional Leste — DER-PR · ${periodo}`, M, 18);
     doc.text(`Gerado em ${fmtData(new Date().toISOString())} por ${u ? u.nome : '—'}`, M, 23);
     doc.setTextColor(30);
-    const filtros = [filtro.rod && 'Rodovia: ' + filtro.rod, filtro.status && 'Status: ' + CONFIG.nomeStatus(filtro.status), filtro.sev && 'Severidade: ' + CONFIG.nomeSev(filtro.sev), filtro.tipo && 'Tipo: ' + CONFIG.nomeTipo(filtro.tipo), filtro.colapso && 'Somente com risco de colapso'].filter(Boolean);
+    // tipos: se nem todos estiverem selecionados, a escolha aparece no cabeçalho
+    const tiposSel = opcoes.tipos && opcoes.tipos.length && opcoes.tipos.length < CONFIG.TIPOS.length
+      ? 'Tipos: ' + opcoes.tipos.map(t => CONFIG.nomeTipo(t)).join(', ') : null;
+    const filtros = [filtro.rod && 'Rodovia: ' + filtro.rod, filtro.status && 'Status: ' + CONFIG.nomeStatus(filtro.status), filtro.sev && 'Severidade: ' + CONFIG.nomeSev(filtro.sev), tiposSel || (filtro.tipo && 'Tipo: ' + CONFIG.nomeTipo(filtro.tipo)), filtro.colapso && 'Somente com risco de colapso'].filter(Boolean);
     let y = 33;
-    if (filtros.length) { doc.setFontSize(9); doc.setTextColor(100); doc.text('Filtros: ' + filtros.join(' · '), M, y); doc.setTextColor(30); y += 6; }
+    if (filtros.length) {
+      doc.setFontSize(9); doc.setTextColor(100);
+      const linhas = doc.splitTextToSize('Filtros: ' + filtros.join(' · '), W - 2 * M);
+      doc.text(linhas, M, y); doc.setTextColor(30); y += 4 * linhas.length + 2;
+    }
 
     // ---- indicadores ----
     const abertas = ocs.filter(o => o.status === 'aberta').length, emAt = ocs.filter(o => o.status === 'em_atendimento').length, res = ocs.filter(o => o.status === 'resolvida');

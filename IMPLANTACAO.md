@@ -25,6 +25,13 @@ No painel, abra a ocorrência e clique em **Editar** (só gestor, só enquanto n
 A correção fica registrada no histórico com seu nome, mostrando o valor anterior e o novo.
 Para corrigir uma ocorrência já resolvida, reabra-a no banco ou peça para o técnico registrar uma nova.
 
+## Emitir um relatório
+
+Ajuste os filtros no painel (período, rodovia, status, severidade) e clique em **Relatório PDF**.
+Na tela que abre, marque os tipos de ocorrência desejados — cada um mostra quantas ocorrências tem —
+e escolha se o registro fotográfico entra. Acima de 60 ocorrências as fotos são desativadas para o
+arquivo não ficar grande demais para e-mail.
+
 ## Atualizar o sistema
 
 Antes de publicar, suba a versão em `app/js/config.js` (`VERSAO`) e rode:

@@ -1,5 +1,5 @@
 // Service worker: deixa o app disponível sem sinal (app shell + malha + bibliotecas)
-const CACHE = 'simemp-v1.6.0';
+const CACHE = 'simemp-v1.7.0';
 const VERSAO = CACHE.replace('simemp-v', '');
 // os arquivos do próprio site levam ?v=<versão> para o navegador nunca misturar versões
 const LOCAIS = [
