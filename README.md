@@ -1,6 +1,6 @@
 # SIMEMP Ocorrências
 
-Registro de ocorrências em rodovias (queda de barreira, árvore, bloqueio de pista, erosão, queda de pista)
+Registro de ocorrências em rodovias (queda de barreira, árvore, bloqueio de pista, erosão, queda de pista, defensa danificada)
 pelos técnicos de campo da S.R. Leste, com painel de acompanhamento em mapa e relatório PDF.
 Custo zero: PWA + hospedagem estática + Supabase (plano gratuito).
 
