@@ -132,6 +132,44 @@
   });
   irAba('lista');
 
+  // ---------- imagens aéreas (ortofotos de drone) ----------
+  const aereas = [];
+  (async () => {
+    let lista = [];
+    try { lista = await (await fetch('data/aereas.json')).json(); } catch (e) { return; }
+    if (!lista.length) return;
+    const cx = $('#aereas');
+    cx.classList.remove('oculto');
+    cx.innerHTML = '<b>Imagens aéreas</b>';
+    lista.forEach(c => {
+      const limites = L.latLngBounds(c.limites);
+      const camada = L.tileLayer(c.url, {
+        minZoom: c.zmin, maxNativeZoom: c.zmax, maxZoom: 23,
+        bounds: limites, opacity: 1, className: 'camada-aerea',
+      });
+      aereas.push({ cfg: c, camada, limites });
+      const linha = el('div', 'aerea');
+      linha.innerHTML = `
+        <label class="it"><input type="checkbox"><span>${esc(c.nome)}</span></label>
+        <div class="aerea-info">${c.data ? esc(new Date(c.data + 'T12:00').toLocaleDateString('pt-BR')) : ''}${c.resolucao_cm ? ' · ' + esc(c.resolucao_cm) + ' cm/px' : ''}
+          <button class="link-sel" title="Enquadrar no mapa">ir</button></div>
+        <input type="range" class="opacidade oculto" min="20" max="100" value="100">`;
+      const chk = linha.querySelector('input[type=checkbox]');
+      const faixa = linha.querySelector('.opacidade');
+      chk.onchange = () => {
+        if (chk.checked) { camada.addTo(mapa); if (!mapa.getBounds().intersects(limites)) mapa.flyToBounds(limites, { padding: [20, 20] }); }
+        else mapa.removeLayer(camada);
+        faixa.classList.toggle('oculto', !chk.checked);
+      };
+      faixa.oninput = () => camada.setOpacity(faixa.value / 100);
+      linha.querySelector('button').onclick = () => {
+        if (!chk.checked) { chk.checked = true; chk.onchange(); }
+        irAba('mapa'); setTimeout(() => mapa.flyToBounds(limites, { padding: [20, 20] }), 100);
+      };
+      cx.appendChild(linha);
+    });
+  })();
+
   // legenda
   $('#leg-sev').innerHTML = CONFIG.SEVERIDADES.map(s => `<div class="it"><span class="pt" style="background:${s.cor}"></span>${s.nome}</div>`).join('');
   $('#leg-status').innerHTML = CONFIG.STATUS.map(s => `<div class="it"><span class="pt borda" style="--c:${s.cor}"></span>${s.nome}</div>`).join('');
@@ -242,6 +280,24 @@
     if (o.lat) { const bm = el('button', 'btn sec', I.pin + 'Ver no mapa'); bm.onclick = () => verNoMapa(o.id); acoes.appendChild(bm); }
     if (STORE.usuarioAtual().perfil === 'gestor' && o.status !== 'resolvida') {
       const be = el('button', 'btn sec', I.edit + 'Editar'); be.onclick = () => modalEditar(o); acoes.appendChild(be);
+    }
+    // a ocorrência está dentro de alguma ortofoto?
+    if (o.lat) {
+      const dentro = aereas.find(a => a.limites.contains([o.lat, o.lng]));
+      if (dentro) {
+        const ba = el('button', 'btn sec', I.layers + 'Imagem aérea');
+        ba.title = dentro.cfg.nome;
+        ba.onclick = () => {
+          if (!mapa.hasLayer(dentro.camada)) {
+            dentro.camada.addTo(mapa);
+            const chk = [...document.querySelectorAll('#aereas .aerea')].map(l => l.querySelector('input[type=checkbox]'))[aereas.indexOf(dentro)];
+            if (chk) { chk.checked = true; chk.closest('.aerea').querySelector('.opacidade').classList.remove('oculto'); }
+          }
+          irAba('mapa');
+          setTimeout(() => mapa.flyTo([o.lat, o.lng], 19, { duration: .8 }), 100);
+        };
+        acoes.appendChild(ba);
+      }
     }
     if (acoes.children.length) cab.appendChild(acoes);
     c.appendChild(el('div', 'secao-titulo', 'Histórico'));

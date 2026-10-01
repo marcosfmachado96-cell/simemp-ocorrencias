@@ -30,10 +30,13 @@ app/                    site publicável (é isso que vai para a hospedagem)
   sw.js                 service worker (funciona sem sinal)
   data/malha_leste.geojson   malha da SR1 Leste = S.R. Leste + Esc. Médio Iguaçu + Esc. Xisto (454 KB, vai para o celular)
   data/malha_pr.geojson      estado inteiro simplificado (só contexto no painel)
+  data/aereas.json           camadas de imagem aérea disponíveis
+  aereas/<id>/{z}/{x}/{y}.webp   tiles das ortofotos
 ferramentas/
   gerar_malha.py        gera os geojson a partir do shapefile SRE
   gerar_icones.py       ícones da PWA
   servidor_dev.py       servidor local para testes
+  gerar_tiles_aereas.py ortofoto georreferenciada -> tiles XYZ para o painel
 SRE_2024_Atualizado/    shapefile oficial SRE-PR 2022 (fonte)
 ```
 
@@ -80,6 +83,11 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
 - **Edição pelo gestor**: no painel, ocorrências não resolvidas podem ter rodovia, km, sentido, município,
   tipo, severidade, pista afetada, risco de colapso e observação corrigidos. Cada alteração entra no histórico
   (quem, quando, valor anterior → novo). Coordenadas e fotos originais não são alteradas.
+- **Imagens aéreas (ortofotos de drone)**: o painel mostra camadas de imagem georreferenciada sobre o mapa,
+  com liga/desliga, controle de transparência e botão "ir" para enquadrar. No detalhe de uma ocorrência que
+  caia dentro de uma ortofoto aparece o botão "Imagem aérea". Gerar uma camada nova:
+  `python ferramentas/gerar_tiles_aereas.py <imagem> --id <id> --nome "<nome>" --data AAAA-MM-DD`
+  (lê a georreferência das tags GeoTIFF, reprojeta para Web Mercator e recorta em tiles).
 - Painel em celular: abas **Lista / Mapa** (em telas com menos de 820 px), indicadores em faixa rolável
   e botão "Ver no mapa" no detalhe.
 - Sentido segue o padrão do SRE: **direita** (km crescente) / **esquerda** (km decrescente) / ambos.

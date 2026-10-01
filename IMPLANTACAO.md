@@ -32,6 +32,18 @@ Na tela que abre, marque os tipos de ocorrência desejados — cada um mostra qu
 e escolha se o registro fotográfico entra. Acima de 60 ocorrências as fotos são desativadas para o
 arquivo não ficar grande demais para e-mail.
 
+## Adicionar uma imagem aérea
+
+Com a ortofoto georreferenciada (GeoTIFF, ou JPEG com as tags GeoTIFF no EXIF):
+
+```bash
+python ferramentas/gerar_tiles_aereas.py "caminho/Ortofoto.jpg" --id pr092-km70 --nome "PR-092 km 70 — Cerro Azul" --data 2026-09-28
+```
+
+Gera os tiles em `app/aereas/<id>/` e registra em `app/data/aereas.json`. Depois é só publicar (`git push`).
+A camada aparece sozinha na caixa de legenda do mapa. Uma área de 500 × 800 m a 3 cm/px dá ~1.300 arquivos
+e ~18 MB. Para áreas muito maiores, use `--zmax 20` (o dobro do tamanho de pixel, 1/4 dos arquivos).
+
 ## Atualizar o sistema
 
 Antes de publicar, suba a versão em `app/js/config.js` (`VERSAO`) e rode:

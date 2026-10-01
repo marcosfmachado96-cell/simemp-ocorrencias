@@ -153,3 +153,13 @@ body.painel .topo .btn.amarelo { box-shadow: 0 4px 14px -4px rgba(242,169,0,.6);
 .tipo-check .qtd { font-size: 12px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .contagem-emissao { font-size: 13px; font-weight: 600; color: var(--navy-700); background: #eef3fb; border-radius: 8px; padding: 8px 11px; margin-bottom: 12px; text-align: center; }
 .contagem-emissao.vazio { color: var(--muted); background: var(--surface-2); font-weight: 500; }
+
+/* ---------- camadas de imagem aérea ---------- */
+.aereas { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 6px; max-width: 230px; }
+.aerea { margin: 4px 0 6px; }
+.aerea .it { display: flex; align-items: flex-start; gap: 7px; cursor: pointer; color: var(--text-2); }
+.aerea .it input { width: 14px; height: 14px; accent-color: var(--navy-600); margin: 1px 0 0; flex: none; }
+.aerea .it span { line-height: 1.25; }
+.aerea-info { font-size: 10.5px; color: var(--muted); margin: 1px 0 0 21px; display: flex; gap: 6px; align-items: center; }
+.aerea .opacidade { width: 100%; margin: 5px 0 0; accent-color: var(--navy-600); height: 14px; }
+.leaflet-container .camada-aerea { image-rendering: auto; }

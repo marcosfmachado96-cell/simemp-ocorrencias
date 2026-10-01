@@ -1,5 +1,5 @@
 // Service worker: deixa o app disponível sem sinal (app shell + malha + bibliotecas)
-const CACHE = 'simemp-v1.7.0';
+const CACHE = 'simemp-v1.8.0';
 const VERSAO = CACHE.replace('simemp-v', '');
 // os arquivos do próprio site levam ?v=<versão> para o navegador nunca misturar versões
 const LOCAIS = [
@@ -41,6 +41,8 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   // tiles de mapa, Supabase e fotos: sempre rede (volume e dados sempre atuais)
   if (url.hostname.includes('tile.openstreetmap') || url.hostname.endsWith('supabase.co')) return;
+  // tiles de imagem aérea: rede direto (muitos arquivos; não ocupam o cache offline)
+  if (url.pathname.includes('/aereas/')) return;
 
   const proprio = url.origin === location.origin;
   const guardavel = proprio || url.hostname === 'cdnjs.cloudflare.com' || url.hostname === 'cdn.jsdelivr.net'
