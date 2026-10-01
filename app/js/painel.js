@@ -116,6 +116,11 @@
 
   // ---------- abas Lista / Mapa (telas estreitas) ----------
   let mapaJaAberto = false;
+  // abre a aba do mapa e só então enquadra (a troca de aba reenquadra na primeira vez)
+  function focar(limites) {
+    irAba('mapa');
+    setTimeout(() => mapa.flyToBounds(limites, { padding: [20, 20] }), 140);
+  }
   function irAba(nome) {
     document.body.dataset.aba = nome;
     document.querySelectorAll('#abas button').forEach(b => b.classList.toggle('ativo', b.dataset.aba === nome));
@@ -157,16 +162,95 @@
       const chk = linha.querySelector('input[type=checkbox]');
       const faixa = linha.querySelector('.opacidade');
       chk.onchange = () => {
-        if (chk.checked) { camada.addTo(mapa); if (!mapa.getBounds().intersects(limites)) mapa.flyToBounds(limites, { padding: [20, 20] }); }
+        if (chk.checked) { camada.addTo(mapa); if (!mapa.getBounds().intersects(limites)) focar(limites); }
         else mapa.removeLayer(camada);
         faixa.classList.toggle('oculto', !chk.checked);
       };
       faixa.oninput = () => camada.setOpacity(faixa.value / 100);
       linha.querySelector('button').onclick = () => {
         if (!chk.checked) { chk.checked = true; chk.onchange(); }
-        irAba('mapa'); setTimeout(() => mapa.flyToBounds(limites, { padding: [20, 20] }), 100);
+        focar(limites);
       };
       cx.appendChild(linha);
+    });
+  })();
+
+  // ---------- relevo: curvas de nível, declividade e consulta de altitude ----------
+  (async () => {
+    const lista = await RELEVO.carregar();
+    if (!lista.length) return;
+    const cx = $('#relevo');
+    cx.classList.remove('oculto');
+    cx.innerHTML = '<b>Relevo</b>';
+    lista.forEach(r => {
+      const linha = el('div', 'aerea');
+      linha.innerHTML = `
+        <div class="relevo-nome">${esc(r.nome)}</div>
+        <label class="it"><input type="checkbox" data-c="curvas"><span>Curvas de nível (${r.equidistancia} m)</span></label>
+        ${r.declividade ? '<label class="it"><input type="checkbox" data-c="decl"><span>Declividade</span></label>' : ''}
+        <div class="aerea-info">${esc(r.altitude_min)}–${esc(r.altitude_max)} m</div>
+        <div class="escala-decl oculto">
+          <div class="barra"></div>
+          <div class="marcas"><span>0°</span><span>27°</span><span>45°</span><span>60°+</span></div>
+        </div>`;
+      let camadaCurvas = null;
+      const chkC = linha.querySelector('[data-c=curvas]');
+      chkC.onchange = async () => {
+        if (chkC.checked) {
+          if (!camadaCurvas) {
+            chkC.disabled = true;
+            try {
+              const gj = await (await fetch(r.curvas)).json();
+              // em zoom afastado só as mestras, senão o desenho vira um borrão
+              const soMestras = () => mapa.getZoom() < 18;
+              camadaCurvas = L.geoJSON(gj, {
+                filter: f => f.properties.mestra || !soMestras(),
+                style: f => f.properties.mestra
+                  ? { color: '#6b3f12', weight: 1.6, opacity: .9 }
+                  : { color: '#8a5a2b', weight: .8, opacity: .55 },
+                onEachFeature: (f, l) => l.bindTooltip(f.properties.alt.toFixed(0) + ' m',
+                  { sticky: true, className: 'marker-tip' }),
+              });
+              let detalhado = !soMestras();
+              mapa.on('zoomend', () => {
+                if (!mapa.hasLayer(camadaCurvas)) return;
+                const agora = !soMestras();
+                if (agora === detalhado) return;
+                detalhado = agora;
+                camadaCurvas.clearLayers();
+                camadaCurvas.addData(gj);
+              });
+            } catch (e) { toast('Não foi possível carregar as curvas', true); chkC.checked = false; }
+            chkC.disabled = false;
+          }
+          if (camadaCurvas) { camadaCurvas.addTo(mapa); focar(L.latLngBounds(r.grade.limites)); }
+        } else if (camadaCurvas) mapa.removeLayer(camadaCurvas);
+      };
+      const chkD = linha.querySelector('[data-c=decl]');
+      if (chkD) {
+        const camadaD = L.tileLayer(r.declividade.url, {
+          minZoom: r.declividade.zmin, maxNativeZoom: r.declividade.zmax, maxZoom: 23,
+          bounds: L.latLngBounds(r.declividade.limites), opacity: .75, className: 'camada-aerea',
+        });
+        chkD.onchange = () => {
+          linha.querySelector('.escala-decl').classList.toggle('oculto', !chkD.checked);
+          if (chkD.checked) { camadaD.addTo(mapa); focar(L.latLngBounds(r.declividade.limites)); }
+          else mapa.removeLayer(camadaD);
+        };
+      }
+      cx.appendChild(linha);
+    });
+
+    // clique no mapa: altitude e declividade no ponto
+    mapa.on('click', async e => {
+      const r = await RELEVO.consultar(e.latlng.lat, e.latlng.lng).catch(() => null);
+      if (!r) return;
+      const txt = isFinite(r.altitude)
+        ? `<b>${r.altitude.toFixed(1)} m</b> de altitude<br>declividade ${r.declividade.toFixed(0)}°`
+        : 'ponto sem dado de relevo';
+      L.popup({ className: 'popup-relevo' }).setLatLng(e.latlng)
+        .setContent(`<div class="marker-tip">${txt}<br><span style="color:var(--muted)">${esc(r.area.nome)}</span></div>`)
+        .openOn(mapa);
     });
   })();
 
@@ -275,6 +359,15 @@
         ${o.resolvida_em ? `<div><span>Resolvida em</span>${fmtData(o.resolvida_em)}</div>` : ''}
       </div>`;
     c.appendChild(cab);
+    // altitude e declividade, quando a ocorrência está dentro de uma área com relevo
+    if (o.lat) RELEVO.consultar(o.lat, o.lng).then(r => {
+      if (!r || !isFinite(r.altitude)) return;
+      const g = cab.querySelector('.info-grid');
+      if (!g) return;
+      g.insertAdjacentHTML('beforeend',
+        `<div><span>Altitude</span>${r.altitude.toFixed(1)} m</div>` +
+        `<div><span>Declividade no ponto</span>${r.declividade.toFixed(0)}°</div>`);
+    }).catch(() => {});
     cab.querySelector('#btn-fechar').onclick = () => { selecionada = null; c.classList.add('oculto'); renderLista(); };
     const acoes = el('div', 'acoes-detalhe');
     if (o.lat) { const bm = el('button', 'btn sec', I.pin + 'Ver no mapa'); bm.onclick = () => verNoMapa(o.id); acoes.appendChild(bm); }

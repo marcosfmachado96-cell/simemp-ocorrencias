@@ -31,12 +31,16 @@ app/                    site publicável (é isso que vai para a hospedagem)
   data/malha_leste.geojson   malha da SR1 Leste = S.R. Leste + Esc. Médio Iguaçu + Esc. Xisto (454 KB, vai para o celular)
   data/malha_pr.geojson      estado inteiro simplificado (só contexto no painel)
   data/aereas.json           camadas de imagem aérea disponíveis
+  data/relevo.json           áreas com modelo de elevação (curvas, declividade, grade de altitude)
+  relevo/<id>/               curvas.geojson, altitude.bin e tiles de declividade
   aereas/<id>/{z}/{x}/{y}.webp   tiles das ortofotos
 ferramentas/
   gerar_malha.py        gera os geojson a partir do shapefile SRE
   gerar_icones.py       ícones da PWA
   servidor_dev.py       servidor local para testes
   gerar_tiles_aereas.py ortofoto georreferenciada -> tiles XYZ para o painel
+  gerar_relevo.py       DEM -> curvas de nível, declividade e grade de altitude
+  _tiles.py             reprojeção UTM -> Web Mercator e recorte em tiles (comum aos dois)
 SRE_2024_Atualizado/    shapefile oficial SRE-PR 2022 (fonte)
 ```
 
@@ -88,6 +92,12 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
   caia dentro de uma ortofoto aparece o botão "Imagem aérea". Gerar uma camada nova:
   `python ferramentas/gerar_tiles_aereas.py <imagem> --id <id> --nome "<nome>" --data AAAA-MM-DD`
   (lê a georreferência das tags GeoTIFF, reprojeta para Web Mercator e recorta em tiles).
+- **Relevo (curvas de nível, declividade e altitude)**: a partir de um DEM de drone o painel ganha curvas de
+  nível (mestras sempre visíveis, as de 1 m acima do zoom 18), camada de declividade colorida e consulta de
+  altitude/declividade ao clicar no mapa — também mostradas no detalhe da ocorrência. Gerar:
+  `python ferramentas/gerar_relevo.py <DEM.tif> --id <id> --nome "<nome>" --data AAAA-MM-DD`.
+  **Atenção:** DEM de drone sem classificação é modelo de *superfície* — em mata as curvas seguem a copa
+  das árvores; em áreas expostas (pista, taludes, escorregamentos) representam o terreno.
 - Painel em celular: abas **Lista / Mapa** (em telas com menos de 820 px), indicadores em faixa rolável
   e botão "Ver no mapa" no detalhe.
 - Sentido segue o padrão do SRE: **direita** (km crescente) / **esquerda** (km decrescente) / ambos.

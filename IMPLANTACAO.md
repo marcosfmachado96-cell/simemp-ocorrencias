@@ -44,6 +44,18 @@ Gera os tiles em `app/aereas/<id>/` e registra em `app/data/aereas.json`. Depois
 A camada aparece sozinha na caixa de legenda do mapa. Uma área de 500 × 800 m a 3 cm/px dá ~1.300 arquivos
 e ~18 MB. Para áreas muito maiores, use `--zmax 20` (o dobro do tamanho de pixel, 1/4 dos arquivos).
 
+## Adicionar o relevo de uma área (curvas de nível, declividade, altitude)
+
+Com o modelo de elevação (DEM/DSM em GeoTIFF) da mesma área:
+
+```bash
+python ferramentas/gerar_relevo.py "caminho/DEM.tif" --id pr092-km70 --nome "PR-092 km 70 — Cerro Azul" --data 2026-09-28
+```
+
+Gera curvas de nível, a grade de altitude e a camada de declividade em `app/relevo/<id>/`
+(~5 MB para 500 × 800 m). Opções úteis: `--equidistancia 2` (curvas mais espaçadas),
+`--sem-declividade`, `--celula 2` (mais suave e leve).
+
 ## Atualizar o sistema
 
 Antes de publicar, suba a versão em `app/js/config.js` (`VERSAO`) e rode:

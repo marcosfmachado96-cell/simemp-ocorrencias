@@ -1,0 +1,47 @@
+[
+  {
+    "id": "pr092-km70",
+    "nome": "PR-092 km 70 — Cerro Azul",
+    "data": "2026-09-28",
+    "altitude_min": 402.7,
+    "altitude_max": 527.8,
+    "equidistancia": 1.0,
+    "mestra": 5.0,
+    "grade": {
+      "arquivo": "relevo/pr092-km70/altitude.bin",
+      "largura": 538,
+      "altura": 845,
+      "celula": 0.9871,
+      "utm_minx": 672022.747,
+      "utm_maxy": 7242145.599,
+      "epsg": 31982,
+      "limites": [
+        [
+          -24.933672951765292,
+          -49.29645971705629
+        ],
+        [
+          -24.926203472075464,
+          -49.29109854442864
+        ]
+      ],
+      "sem_dado": -9999
+    },
+    "curvas": "relevo/pr092-km70/curvas.geojson",
+    "declividade": {
+      "url": "relevo/pr092-km70/declividade/{z}/{x}/{y}.webp",
+      "limites": [
+        [
+          -24.93373315591345,
+          -49.29645971705629
+        ],
+        [
+          -24.9261432885417,
+          -49.29109854442864
+        ]
+      ],
+      "zmin": 13,
+      "zmax": 20
+    }
+  }
+]

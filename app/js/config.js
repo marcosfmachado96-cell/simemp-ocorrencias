@@ -5,7 +5,7 @@ window.CONFIG = {
   MODO: 'supabase',
   SUPABASE_URL: 'https://dsgtfrkyocevlywscpvu.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_yFe77x8yjIbmwXctUWt9Sw_uaUWmnHQ',
-  VERSAO: '1.8.0',
+  VERSAO: '1.9.0',
 
   TIPOS: [
     { id: 'queda_barreira', nome: 'Queda de barreira' },

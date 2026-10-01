@@ -163,3 +163,12 @@ body.painel .topo .btn.amarelo { box-shadow: 0 4px 14px -4px rgba(242,169,0,.6);
 .aerea-info { font-size: 10.5px; color: var(--muted); margin: 1px 0 0 21px; display: flex; gap: 6px; align-items: center; }
 .aerea .opacidade { width: 100%; margin: 5px 0 0; accent-color: var(--navy-600); height: 14px; }
 .leaflet-container .camada-aerea { image-rendering: auto; }
+
+/* ---------- relevo ---------- */
+.relevo-nome { font-size: 11.5px; font-weight: 600; color: var(--text-2); margin-bottom: 3px; }
+#relevo .it { margin: 2px 0; }
+.escala-decl { margin: 6px 0 2px; }
+.escala-decl .barra { height: 7px; border-radius: 4px; background: linear-gradient(to right, #1a9850, #a6d96a 25%, #fee08b 45%, #fd8d3c 58%, #e31a1c 75%, #800026); }
+.escala-decl .marcas { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+.popup-relevo .leaflet-popup-content-wrapper { border-radius: 10px; }
+.popup-relevo .leaflet-popup-content { margin: 9px 12px; }
