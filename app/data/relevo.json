@@ -1,5 +1,50 @@
 [
   {
+    "id": "pr092-km19",
+    "nome": "PR-092 km 19 — Almirante Tamandaré",
+    "data": "2026-09-16",
+    "altitude_min": 1000.3,
+    "altitude_max": 1087.3,
+    "equidistancia": 1.0,
+    "mestra": 5.0,
+    "grade": {
+      "arquivo": "relevo/pr092-km19/altitude.bin",
+      "largura": 445,
+      "altura": 521,
+      "celula": 1.0277,
+      "utm_minx": 670663.615,
+      "utm_maxy": 7203196.298,
+      "epsg": 31982,
+      "limites": [
+        [
+          -25.282733333301817,
+          -49.30507419867787
+        ],
+        [
+          -25.277952386344055,
+          -49.30046657052096
+        ]
+      ],
+      "sem_dado": -9999
+    },
+    "curvas": "relevo/pr092-km19/curvas.geojson",
+    "declividade": {
+      "url": "relevo/pr092-km19/declividade/{z}/{x}/{y}.webp",
+      "limites": [
+        [
+          -25.282785576042095,
+          -49.30507419867787
+        ],
+        [
+          -25.27790015496944,
+          -49.30046657052096
+        ]
+      ],
+      "zmin": 13,
+      "zmax": 20
+    }
+  },
+  {
     "id": "pr092-km70",
     "nome": "PR-092 km 70 — Cerro Azul",
     "data": "2026-09-28",
