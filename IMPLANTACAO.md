@@ -56,6 +56,22 @@ Gera curvas de nível, a grade de altitude e a camada de declividade em `app/rel
 (~5 MB para 500 × 800 m). Opções úteis: `--equidistancia 2` (curvas mais espaçadas),
 `--sem-declividade`, `--celula 2` (mais suave e leve).
 
+## Se o sistema sair do ar ("Failed to fetch")
+
+O plano gratuito do Supabase **pausa o projeto após 7 dias sem atividade** — o endereço sai do ar e
+o app/painel mostra "Failed to fetch". Os dados não se perdem (o Supabase mantém banco, backups e fotos;
+no nosso caso, com prazo para retomar até 16/11/2027).
+
+Para voltar: https://supabase.com/dashboard/project/dsgtfrkyocevlywscpvu → **Resume project**.
+Leva de alguns minutos a algumas horas (o nosso é pequeno: minutos).
+
+Os registros feitos pelos técnicos durante a pausa **não se perdem**: ficam na fila do celular e sobem
+sozinhos quando o servidor volta.
+
+Para evitar novas pausas existe a rotina [.github/workflows/manter-ativo.yml](.github/workflows/manter-ativo.yml),
+que consulta o banco três vezes por semana (segunda, quarta e sexta). Se a consulta falhar, o GitHub envia
+e-mail avisando — é o alerta de que o projeto caiu.
+
 ## Atualizar o sistema
 
 Antes de publicar, suba a versão em `app/js/config.js` (`VERSAO`) e rode:

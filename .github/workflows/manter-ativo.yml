@@ -1,0 +1,37 @@
+# Mantém o projeto Supabase ativo.
+#
+# O plano gratuito pausa projetos após 7 dias sem atividade — e um projeto pausado
+# deixa o sistema fora do ar até alguém restaurar à mão. Esta rotina faz uma consulta
+# mínima ao banco três vezes por semana, o que conta como atividade.
+#
+# Não usa segredos: a chave consultada é a mesma publicada no site (publishable),
+# e a consulta só conta registros, sem ler dados.
+name: Manter o Supabase ativo
+
+on:
+  schedule:
+    - cron: "17 12 * * 1,3,5"   # segunda, quarta e sexta, 12:17 UTC (9h17 em Brasília)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar o banco
+        run: |
+          URL="https://dsgtfrkyocevlywscpvu.supabase.co/rest/v1/ocorrencias?select=id&limit=1"
+          CHAVE="sb_publishable_yFe77x8yjIbmwXctUWt9Sw_uaUWmnHQ"
+          for tentativa in 1 2 3; do
+            CODIGO=$(curl -s -o /tmp/resposta -w "%{http_code}" --max-time 30 \
+              -H "apikey: $CHAVE" -H "Prefer: count=exact" "$URL" || echo "000")
+            echo "tentativa $tentativa: HTTP $CODIGO"
+            if [ "$CODIGO" = "200" ]; then
+              echo "Supabase respondeu normalmente."
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::O Supabase não respondeu (HTTP $CODIGO). O projeto pode estar pausado —"
+          echo "::error::restaure em https://supabase.com/dashboard/project/dsgtfrkyocevlywscpvu"
+          cat /tmp/resposta || true
+          exit 1

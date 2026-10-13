@@ -112,3 +112,6 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
 4. Uma mudança local ainda não enviada nunca é sobrescrita pelo servidor.
 
 Publicação: push na branch `main` → GitHub Actions publica `app/` no GitHub Pages.
+
+Uma segunda rotina (`.github/workflows/manter-ativo.yml`) consulta o Supabase três vezes por semana para
+o projeto não ser pausado por inatividade (plano gratuito pausa após 7 dias). Se falhar, o GitHub avisa por e-mail.
