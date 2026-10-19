@@ -183,3 +183,14 @@ a { color: var(--navy-600); }
   background: var(--cor); margin-right: 7px; }
 .chips.sit button.ativo { background: var(--cor); border-color: var(--cor); color: #fff; box-shadow: 0 2px 8px -2px var(--cor); }
 .chips.sit button.ativo::before { background: #fff; }
+
+/* ---------- ação destrutiva ---------- */
+.btn.perigo { background: var(--red); color: #fff; }
+.btn.sec.perigo { background: var(--surface); color: var(--red); border-color: #fecaca; }
+.btn.sec.perigo:hover { background: #fef2f2; }
+.aviso-apagar { display: flex; gap: 9px; align-items: flex-start; background: #fef2f2; border: 1px solid #fecaca;
+  color: #991b1b; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; }
+.aviso-apagar .ico { width: 17px; height: 17px; flex: none; margin-top: 1px; }
+.resumo-apagar { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; font-size: 13.5px; margin-bottom: 14px; line-height: 1.5; }
+.resumo-apagar .meta { color: var(--muted); font-size: 12.5px; }

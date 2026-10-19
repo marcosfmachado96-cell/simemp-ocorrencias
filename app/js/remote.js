@@ -144,6 +144,27 @@ window.REMOTE = (() => {
     return u;
   }
 
+  // ---------- exclusão de ocorrência (gestor) ----------
+  // Apaga as imagens do Storage e chama a função do banco, que guarda uma cópia
+  // do registro em 'exclusoes' antes de remover.
+  async function apagarOcorrencia(id, motivo) {
+    if (!(await sessao())) throw new Error('É preciso estar conectado para apagar.');
+    const { data: fs } = await cliente().from('fotos').select('caminho').eq('oc_id', id);
+    if (fs && fs.length) {
+      const { error } = await cliente().storage.from('fotos').remove(fs.map(f => f.caminho));
+      if (error) throw new Error('Não foi possível remover as fotos: ' + error.message);
+    }
+    const { error } = await cliente().rpc('apagar_ocorrencia', { p_oc_id: id, p_motivo: motivo });
+    if (error) throw new Error(error.message);
+  }
+  async function listarExclusoes(limite = 50) {
+    const { data, error } = await cliente().from('exclusoes')
+      .select('oc_id, ocorrencia, qtd_fotos, motivo, apagada_nome, apagada_em')
+      .order('apagada_em', { ascending: false }).limit(limite);
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
   // ---------- usuários (gestor) ----------
   const URL_APP = () => location.origin + location.pathname.replace(/[^/]*$/, '');
   async function listarUsuarios() {
@@ -182,6 +203,6 @@ window.REMOTE = (() => {
     cliente().auth.onAuthStateChange((evento) => { if (evento === 'PASSWORD_RECOVERY') cb(); });
   }
 
-  return { cliente, entrar, sair, restaurar, iniciar, enviarFila, trazer, assinar,
+  return { cliente, entrar, sair, restaurar, iniciar, enviarFila, trazer, assinar, apagarOcorrencia, listarExclusoes,
            listarUsuarios, criarUsuario, atualizarUsuario, enviarRedefinicao, alterarSenha, aoRecuperarSenha };
 })();

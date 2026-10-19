@@ -34,6 +34,7 @@ window.ICONS = (() => {
     power: w('<path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/>'),
     arrowRight: w('<path d="M5 12h14M13 6l6 6-6 6"/>'),
     layers: w('<path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>'),
+    trash: w('<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/>'),
     checkCircle: w('<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/>'),
   };
 })();

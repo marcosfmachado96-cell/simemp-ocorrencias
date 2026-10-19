@@ -87,6 +87,9 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
   quantidade de cada um) e se o registro fotográfico entra. Os demais filtros vêm da tela do painel.
 - Relatório PDF: registro fotográfico traz **a primeira e a última foto** de cada ocorrência (por data de captura),
   com a fase e o horário; se houver mais, avisa o total.
+- **Apagar (gestor)**: no painel, botão **Apagar** na ocorrência. Exige motivo escrito, remove também as
+  fotos do servidor e grava um registro de auditoria (cópia dos dados, motivo, autor e data) na tabela
+  `exclusoes` — consultável no painel pelo link "exclusões", ao lado da contagem da lista. É irreversível.
 - **Edição pelo gestor**: no painel, ocorrências não resolvidas podem ter rodovia, km, sentido, município,
   tipo, severidade, pista afetada, risco de colapso e observação corrigidos. Cada alteração entra no histórico
   (quem, quando, valor anterior → novo). Coordenadas e fotos originais não são alteradas.

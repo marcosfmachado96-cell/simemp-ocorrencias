@@ -36,6 +36,16 @@ No painel, abra a ocorrência e clique em **Editar** (só gestor, só enquanto n
 A correção fica registrada no histórico com seu nome, mostrando o valor anterior e o novo.
 Para corrigir uma ocorrência já resolvida, reabra-a no banco ou peça para o técnico registrar uma nova.
 
+## Apagar uma ocorrência
+
+No painel (só gestor): abra a ocorrência → **Apagar**. É preciso escrever o motivo.
+A ocorrência e suas fotos saem do servidor — **não há como desfazer**.
+
+Fica guardado um registro de auditoria com a cópia dos dados, o motivo, quem apagou e quando.
+Para consultar: link **exclusões**, ao lado da contagem de ocorrências na lista.
+
+Para corrigir um registro em vez de apagar, prefira **Editar** (mantém o histórico).
+
 ## Emitir um relatório
 
 Ajuste os filtros no painel (período, rodovia, status, severidade) e clique em **Relatório PDF**.

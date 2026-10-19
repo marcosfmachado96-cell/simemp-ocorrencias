@@ -287,6 +287,12 @@
   function renderLista() {
     const c = $('#lista'); c.innerHTML = '';
     $('#resumo-lista').innerHTML = `${I.filter}${visiveis.length} ocorrência(s) ${filtro.escopo === 'abertas' ? 'em aberto' : 'no período'}`;
+    if (STORE.usuarioAtual().perfil === 'gestor') {
+      const l = el('button', 'link-sel', 'exclusões');
+      l.style.marginLeft = 'auto';
+      l.onclick = () => modalExclusoes();
+      $('#resumo-lista').appendChild(l);
+    }
     if (!visiveis.length) { c.appendChild(el('div', 'vazio', `${I.search}<div>Nada encontrado com os filtros atuais.</div>`)); c.querySelector('.ico').style.color = 'var(--muted-2)'; return; }
     for (const o of visiveis) {
       const d = el('div', 'card oc' + (selecionada === o.id ? ' sel' : ''));
@@ -374,6 +380,9 @@
     if (STORE.usuarioAtual().perfil === 'gestor' && o.status !== 'resolvida') {
       const bs = el('button', 'btn sec', I.layers + 'Situação'); bs.onclick = () => modalSituacao(o); acoes.appendChild(bs);
       const be = el('button', 'btn sec', I.edit + 'Editar'); be.onclick = () => modalEditar(o); acoes.appendChild(be);
+    }
+    if (STORE.usuarioAtual().perfil === 'gestor') {
+      const bx = el('button', 'btn sec perigo', I.trash + 'Apagar'); bx.onclick = () => modalApagar(o); acoes.appendChild(bx);
     }
     // a ocorrência está dentro de alguma ortofoto?
     if (o.lat) {
@@ -513,6 +522,64 @@
       }
       formNovo(); carregar();
     });
+  }
+
+  // ---------- histórico de exclusões (auditoria) ----------
+  function modalExclusoes() {
+    modal('Ocorrências apagadas', async m => {
+      m.innerHTML = '<div class="resumo-emissao">Registro de auditoria: o que foi apagado, por quem e por quê.</div><div id="x-lista">Carregando…</div>';
+      let lista = [];
+      try { lista = await REMOTE.listarExclusoes(100); }
+      catch (e) { m.querySelector('#x-lista').innerHTML = `<div style="color:var(--red)">${esc(e.message)}</div>`; return; }
+      if (!lista.length) { m.querySelector('#x-lista').innerHTML = '<div class="vazio" style="padding:24px">Nenhuma ocorrência foi apagada.</div>'; return; }
+      m.querySelector('#x-lista').innerHTML = `<table class="tabela"><thead><tr>
+          <th>Ocorrência</th><th>Apagada por</th><th>Quando</th><th>Motivo</th></tr></thead><tbody>${
+        lista.map(x => {
+          const o = x.ocorrencia || {};
+          return `<tr><td><b>${esc(o.rodovia || '—')} · km ${o.km != null ? Number(o.km).toFixed(2).replace('.', ',') : '—'}</b><br>
+              <span style="color:var(--muted)">${esc(CONFIG.nomeTipo(o.tipo))} · ${esc(CONFIG.nomeSev(o.severidade))}${x.qtd_fotos ? ' · ' + x.qtd_fotos + ' foto(s)' : ''}</span></td>
+            <td>${esc(x.apagada_nome || '—')}</td><td>${fmtData(x.apagada_em)}</td><td>${esc(x.motivo)}</td></tr>`;
+        }).join('')}</tbody></table>`;
+    }, '760px');
+  }
+
+  // ---------- apagar ocorrência (gestor) ----------
+  function modalApagar(o) {
+    modal('Apagar ocorrência', m => {
+      const fotos = (o.historico || []).reduce((n, e) => n + ((e.fotos || []).length), 0);
+      m.innerHTML = `
+        <div class="aviso-apagar">${I.alert}<div><b>Esta ação não pode ser desfeita.</b>
+          A ocorrência e ${fotos === 1 ? 'a foto' : `as ${fotos} fotos`} serão removidas do servidor.
+          Fica guardado um registro de auditoria com a cópia dos dados, o motivo e o seu nome.</div></div>
+        <div class="resumo-apagar">
+          <b>${esc(o.rodovia)} · km ${Number(o.km).toFixed(2).replace('.', ',')}</b><br>
+          ${esc(CONFIG.nomeTipo(o.tipo))} · ${esc(CONFIG.nomeSev(o.severidade))} · ${esc(CONFIG.nomeStatus(o.status))}<br>
+          <span class="meta">registrada por ${esc(o.criado_por)} em ${fmtData(o.criado_em)}</span>
+        </div>
+        <div class="campo"><label>Motivo da exclusão (obrigatório)</label>
+          <textarea id="x-motivo" placeholder="Ex.: registro duplicado da ocorrência do km 19,52"></textarea></div>
+        <div class="erro-login oculto" id="x-erro"></div>
+        <div class="linha-campos">
+          <button class="btn sec" id="x-cancelar" style="flex:2">Cancelar</button>
+          <button class="btn perigo" id="x-ok" style="flex:1">${I.trash}Apagar</button>
+        </div>`;
+      m.querySelector('#x-cancelar').onclick = fecharModal;
+      m.querySelector('#x-ok').onclick = async () => {
+        const erro = m.querySelector('#x-erro');
+        const motivo = m.querySelector('#x-motivo').value.trim();
+        erro.classList.add('oculto');
+        if (motivo.length < 5) {
+          erro.textContent = 'Descreva o motivo da exclusão.'; erro.classList.remove('oculto'); return;
+        }
+        const b = m.querySelector('#x-ok'); b.disabled = true;
+        try {
+          await REMOTE.apagarOcorrencia(o.id, motivo);
+          await STORE.remover(o.id);
+          selecionada = null; $('#detalhe').classList.add('oculto');
+          fecharModal(); toast('Ocorrência apagada'); render();
+        } catch (e) { erro.textContent = e.message; erro.classList.remove('oculto'); b.disabled = false; }
+      };
+    }, '480px');
   }
 
   // ---------- situação da ocorrência (gestor) ----------

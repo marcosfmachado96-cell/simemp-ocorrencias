@@ -179,6 +179,14 @@ window.STORE = (() => {
     return { oc, mudancas };
   }
 
+  // remove a ocorrência e suas fotos do cache do aparelho (já apagadas no servidor)
+  async function remover(id) {
+    for (const f of await getAll('fotos', 'oc_id', id)) await del('fotos', f.id);
+    await del('ocorrencias', id);
+    for (const item of await getAll('outbox')) if (item.op.oc_id === id) await del('outbox', item.seq);
+    notificar();
+  }
+
   async function fotosDe(oc_id) { return getAll('fotos', 'oc_id', oc_id); }
   async function foto(id) { return get('fotos', id); }
   const urls = new Map();
@@ -227,6 +235,6 @@ window.STORE = (() => {
     return db;
   }
 
-  return { init, uuid, usuarioAtual, login, logout, listar, obter, criar, atualizar, editar, fotosDe, foto, fotoUrl,
+  return { init, uuid, usuarioAtual, login, logout, listar, obter, criar, atualizar, editar, remover, fotosDe, foto, fotoUrl,
            pendentes, fila, concluirItem, sincronizar, onChange, notificar, receber, marcarEnviada, limparTudo, meta, _put: put };
 })();
