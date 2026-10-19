@@ -275,7 +275,7 @@
     const res = todas.filter(o => o.status === 'resolvida' && o.resolvida_em);
     const tm = res.length ? res.reduce((s, o) => s + horas(o.criado_em, o.resolvida_em), 0) / res.length : 0;
     const kpi = (ic, v, t, cor, alerta) => `<div class="kpi ${alerta ? 'alerta' : ''}" style="--c:${cor}"><div class="ico-wrap">${ic}</div><div><b>${v}</b><span>${t}</span></div></div>`;
-    const ico = { aberta: I.inbox, aguardando_atendimento: I.clock, em_monitoramento: I.search, em_obras: I.truck };
+    const ico = { aberta: I.inbox, aguardando_atendimento: I.clock, em_monitoramento: I.search, em_projeto: I.edit, em_obras: I.truck };
     $('#kpis').innerHTML =
       CONFIG.STATUS.filter(x => x.id !== 'resolvida')
         .map(x => kpi(ico[x.id] || I.inbox, conta(x.id), x.nome, x.cor)).join('') +

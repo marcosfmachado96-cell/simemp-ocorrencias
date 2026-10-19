@@ -5,7 +5,7 @@ window.CONFIG = {
   MODO: 'supabase',
   SUPABASE_URL: 'https://dsgtfrkyocevlywscpvu.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_yFe77x8yjIbmwXctUWt9Sw_uaUWmnHQ',
-  VERSAO: '2.0.0',
+  VERSAO: '2.1.0',
 
   TIPOS: [
     { id: 'queda_barreira', nome: 'Queda de barreira' },
@@ -37,6 +37,7 @@ window.CONFIG = {
     { id: 'aberta',                 nome: 'Aberta',                 cor: '#dc2626' },
     { id: 'aguardando_atendimento', nome: 'Aguardando atendimento', cor: '#ea580c' },
     { id: 'em_monitoramento',       nome: 'Em monitoramento',       cor: '#2563eb' },
+    { id: 'em_projeto',             nome: 'Em elaboração de projeto', cor: '#7c3aed' },
     { id: 'em_obras',               nome: 'Em obras',               cor: '#d97706' },
     { id: 'resolvida',              nome: 'Resolvida',              cor: '#16a34a' },
   ],

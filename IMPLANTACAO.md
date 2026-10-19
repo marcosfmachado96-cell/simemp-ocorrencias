@@ -21,7 +21,7 @@ Instalar no celular: abrir o endereço do app → menu do navegador → **Adicio
 
 ## Situação da ocorrência
 
-**Aberta → Aguardando atendimento / Em monitoramento / Em obras → Resolvida.**
+**Aberta → Aguardando atendimento / Em monitoramento / Em elaboração de projeto / Em obras → Resolvida.**
 
 - No painel (gestor): abra a ocorrência → botão **Situação**.
 - No app (técnico): abra a ocorrência → **Alterar situação**.
