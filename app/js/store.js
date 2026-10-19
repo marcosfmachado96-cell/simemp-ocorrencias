@@ -136,11 +136,11 @@ window.STORE = (() => {
     if (!oc) throw new Error('Ocorrência não encontrada');
     if (status === 'resolvida' && !fotosBlobs.length) throw new Error('Foto de comprovação obrigatória para resolver.');
     const u = usuarioAtual();
-    const fase = status === 'resolvida' ? 'comprovacao' : status === 'em_atendimento' ? 'atendimento' : 'acompanhamento';
+    const fase = status === 'resolvida' ? 'comprovacao' : status === CONFIG.STATUS_COM_EQUIPE ? 'atendimento' : 'acompanhamento';
     const fotos = await salvarFotos(id, fase, fotosBlobs);
     if (status) oc.status = status;
     if (atendimento) oc.atendimento = Object.assign({}, oc.atendimento || {}, atendimento);
-    if (status === 'em_atendimento' && !(oc.atendimento && oc.atendimento.inicio_em)) {
+    if (status === CONFIG.STATUS_COM_EQUIPE && !(oc.atendimento && oc.atendimento.inicio_em)) {
       oc.atendimento = Object.assign({}, oc.atendimento || {}, { inicio_em: agora() });
     }
     if (status === 'resolvida') oc.resolvida_em = agora();

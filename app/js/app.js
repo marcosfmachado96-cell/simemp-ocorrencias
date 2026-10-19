@@ -298,8 +298,9 @@
     const perfil = usuario().perfil;
     if (perfil !== 'der' && o.status !== 'resolvida') {
       const ac = el('div', 'acoes');
-      if (o.status === 'aberta') { const b = el('button', 'btn amarelo bloco', I.play + 'Iniciar atendimento'); b.onclick = () => formAtendimento(o, 'em_atendimento'); ac.appendChild(b); }
-      const ba = el('button', 'btn sec bloco', I.camera + (o.status === 'aberta' ? 'Adicionar fotos de acompanhamento' : 'Registrar avanço / fotos'));
+      const bs = el('button', 'btn amarelo bloco', I.layers + 'Alterar situação');
+      bs.onclick = () => formSituacao(o); ac.appendChild(bs);
+      const ba = el('button', 'btn sec bloco', I.camera + 'Adicionar fotos de acompanhamento');
       ba.onclick = () => formAtendimento(o, null); ac.appendChild(ba);
       const r = el('button', 'btn verde bloco', I.check + 'Resolver com foto de comprovação'); r.onclick = () => formAtendimento(o, 'resolvida'); ac.appendChild(r);
       c.appendChild(ac);
@@ -331,15 +332,77 @@
   }
   function verFoto(u) { const v = el('div', 'visualizador'); v.innerHTML = `<img src="${u}">`; v.onclick = () => v.remove(); document.body.appendChild(v); }
 
+  // escolha da situação (aguardando atendimento / em monitoramento / em obras)
+  function formSituacao(o) {
+    const opcoes = CONFIG.STATUS.filter(x => x.id !== 'aberta' && x.id !== 'resolvida');
+    modal('Situação da ocorrência', m => {
+      m.innerHTML = `
+        <div class="situacao-atual">Agora: <b style="color:${CONFIG.corStatus(o.status)}">${esc(CONFIG.nomeStatus(o.status))}</b></div>
+        <div class="campo"><div class="rotulo">Nova situação</div><div class="chips sit" id="s-opcoes"></div></div>
+        <div id="s-equipe"></div>
+        <div class="campo"><label>Descrição</label><textarea id="s-texto" placeholder="O que motivou a mudança"></textarea></div>
+        <div class="campo"><div class="rotulo">Fotos (opcional)</div><div class="fotos-grid" id="s-fotos"></div></div>
+        <button class="btn bloco" id="s-ok">${I.check}Salvar situação</button>`;
+      let escolhido = null;
+      const cont = m.querySelector('#s-opcoes');
+      opcoes.forEach(x => {
+        const b = el('button', null, esc(x.nome)); b.type = 'button';
+        b.style.setProperty('--cor', x.cor);
+        if (x.id === CONFIG.eqStatus(o.status)) b.classList.add('ativo');
+        b.onclick = () => {
+          escolhido = x.id;
+          [...cont.children].forEach(c => c.classList.remove('ativo'));
+          b.classList.add('ativo');
+          equipe();
+        };
+        cont.appendChild(b);
+        if (x.id === CONFIG.eqStatus(o.status)) escolhido = x.id;
+      });
+      const at = o.atendimento || {};
+      function equipe() {
+        const alvo = m.querySelector('#s-equipe');
+        if (escolhido !== CONFIG.STATUS_COM_EQUIPE) { alvo.innerHTML = ''; return; }
+        if (alvo.querySelector('#s-equip')) return;
+        alvo.innerHTML = `
+          <div class="campo"><label>Equipamento atuando</label><input type="text" id="s-equip" value="${esc(at.equipamento || '')}" placeholder="Ex.: escavadeira hidráulica"></div>
+          <div class="campo"><label>Quem está realizando</label><input type="text" id="s-exec" value="${esc(at.executor || '')}" placeholder="Equipe / empresa"></div>
+          ${o.tipo === 'queda_barreira' ? `<div class="campo"><label>Volume estimado (m³)</label><input type="number" id="s-vol" inputmode="decimal" value="${esc(at.volume_m3 || '')}"></div>` : ''}`;
+      }
+      equipe();
+      const fotos = [];
+      const rf = () => renderFotos(m.querySelector('#s-fotos'), fotos, i => { fotos.splice(i, 1); rf(); }, () => pedirFotos(bl => { fotos.push(...bl); rf(); }));
+      rf();
+      if (!form.gps && o.lat) form.gps = { lat: o.lat, lng: o.lng, precisao: o.precisao };
+      m.querySelector('#s-ok').onclick = async () => {
+        if (!escolhido) return toast('Escolha a situação', true);
+        const mudou = escolhido !== CONFIG.eqStatus(o.status);
+        let atd = null;
+        if (escolhido === CONFIG.STATUS_COM_EQUIPE) {
+          atd = { equipamento: (m.querySelector('#s-equip') || {}).value || '', executor: (m.querySelector('#s-exec') || {}).value || '' };
+          atd.equipamento = atd.equipamento.trim(); atd.executor = atd.executor.trim();
+          const v = m.querySelector('#s-vol');
+          if (v) atd.volume_m3 = parseFloat(v.value) || null;
+          if (!atd.equipamento && !atd.executor && !atd.volume_m3) return toast('Informe ao menos equipamento ou executor', true);
+        }
+        const texto = m.querySelector('#s-texto').value.trim();
+        if (!mudou && !texto && !fotos.length && !atd) return toast('Nada para registrar', true);
+        const b = m.querySelector('#s-ok'); b.disabled = true;
+        try {
+          const carimbadas = await carimbarTodas(fotos, o);
+          await STORE.atualizar(o.id, { status: escolhido, texto, atendimento: atd, fotosBlobs: carimbadas });
+          fecharModal(); toast('Situação atualizada'); renderDetalhe(o.id);
+        } catch (e) { toast(e.message, true); b.disabled = false; }
+      };
+    });
+  }
+
   // formulário de atendimento / avanço / resolução
   function formAtendimento(o, novoStatus) {
-    const titulo = novoStatus === 'em_atendimento' ? 'Iniciar atendimento'
-      : novoStatus === 'resolvida' ? 'Resolver ocorrência'
-      : o.status === 'aberta' ? 'Fotos de acompanhamento' : 'Registrar avanço';
+    const titulo = novoStatus === 'resolvida' ? 'Resolver ocorrência' : 'Fotos de acompanhamento';
     const fotos = [];
     modal(titulo, m => {
       const at = o.atendimento || {};
-      const mostrarAt = novoStatus !== 'resolvida' || !o.atendimento;
+      const mostrarAt = false;   // equipe e volume agora são definidos em "Alterar situação"
       m.innerHTML = `
         ${mostrarAt ? `
         <div class="campo"><label>Equipamento atuando</label><input type="text" id="a-equip" value="${esc(at.equipamento || '')}" placeholder="Ex.: escavadeira hidráulica, caminhão basculante"></div>
@@ -355,7 +418,7 @@
       m.querySelector('#a-ok').onclick = async () => {
         const atd = mostrarAt ? { equipamento: m.querySelector('#a-equip').value.trim(), executor: m.querySelector('#a-exec').value.trim() } : null;
         if (atd && m.querySelector('#a-vol')) atd.volume_m3 = parseFloat(m.querySelector('#a-vol').value) || null;
-        if (atd && !atd.equipamento && !atd.executor && !atd.volume_m3) { if (novoStatus === 'em_atendimento') return toast('Informe ao menos equipamento ou executor', true); }
+
         if (!novoStatus && !fotos.length && !m.querySelector('#a-texto').value.trim() && !atd) return toast('Tire ao menos uma foto ou escreva a situação', true);
         const bOk = m.querySelector('#a-ok'); bOk.disabled = true;
         try {

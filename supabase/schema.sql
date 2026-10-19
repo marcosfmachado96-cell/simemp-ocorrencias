@@ -43,7 +43,7 @@ create table if not exists public.ocorrencias (
   criado_em      timestamptz not null,
   criado_por_id  uuid references public.perfis(id),
   criado_por     text,
-  status         text not null check (status in ('aberta', 'em_atendimento', 'resolvida')),
+  status         text not null check (status in ('aberta', 'aguardando_atendimento', 'em_monitoramento', 'em_obras', 'resolvida')),
   lat            double precision,
   lng            double precision,
   precisao       integer,

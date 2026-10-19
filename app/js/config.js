@@ -5,7 +5,7 @@ window.CONFIG = {
   MODO: 'supabase',
   SUPABASE_URL: 'https://dsgtfrkyocevlywscpvu.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_yFe77x8yjIbmwXctUWt9Sw_uaUWmnHQ',
-  VERSAO: '1.9.1',
+  VERSAO: '2.0.0',
 
   TIPOS: [
     { id: 'queda_barreira', nome: 'Queda de barreira' },
@@ -34,10 +34,14 @@ window.CONFIG = {
     { id: 'ambos_sentidos',nome: 'Ambos os sentidos' },
   ],
   STATUS: [
-    { id: 'aberta',         nome: 'Aberta',         cor: '#dc2626' },
-    { id: 'em_atendimento', nome: 'Em atendimento', cor: '#d97706' },
-    { id: 'resolvida',      nome: 'Resolvida',      cor: '#16a34a' },
+    { id: 'aberta',                 nome: 'Aberta',                 cor: '#dc2626' },
+    { id: 'aguardando_atendimento', nome: 'Aguardando atendimento', cor: '#ea580c' },
+    { id: 'em_monitoramento',       nome: 'Em monitoramento',       cor: '#2563eb' },
+    { id: 'em_obras',               nome: 'Em obras',               cor: '#d97706' },
+    { id: 'resolvida',              nome: 'Resolvida',              cor: '#16a34a' },
   ],
+  // "Em obras" é a situação que registra equipamento, executor e volume
+  STATUS_COM_EQUIPE: 'em_obras',
   // mapa base (OpenStreetMap, gratuito; o CSS dessatura os tiles para destacar as ocorrências)
   TILES: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   TILES_ATTR: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -53,8 +57,10 @@ window.CONFIG = {
 CONFIG.nomeTipo   = id => (CONFIG.TIPOS.find(t => t.id === id) || {}).nome || id;
 CONFIG.nomeSev    = id => (CONFIG.SEVERIDADES.find(t => t.id === id) || {}).nome || id;
 CONFIG.corSev     = id => (CONFIG.SEVERIDADES.find(t => t.id === id) || {}).cor || '#888';
-CONFIG.nomeStatus = id => (CONFIG.STATUS.find(t => t.id === id) || {}).nome || id;
-CONFIG.corStatus  = id => (CONFIG.STATUS.find(t => t.id === id) || {}).cor || '#888';
+// registros antigos usavam 'em_atendimento'
+CONFIG.eqStatus   = id => (id === 'em_atendimento' ? 'em_obras' : id);
+CONFIG.nomeStatus = id => (CONFIG.STATUS.find(t => t.id === CONFIG.eqStatus(id)) || {}).nome || id;
+CONFIG.corStatus  = id => (CONFIG.STATUS.find(t => t.id === CONFIG.eqStatus(id)) || {}).cor || '#888';
 CONFIG.nomeSentido = id => {
   // aceita os valores antigos (crescente/decrescente) de registros já gravados
   const eq = { crescente: 'direita', decrescente: 'esquerda' };

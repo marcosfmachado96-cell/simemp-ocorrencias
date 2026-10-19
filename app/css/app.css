@@ -174,3 +174,12 @@ a { color: var(--navy-600); }
 .banner b { display: block; }
 .banner-instalar { background: #fff8e6; border: 1px solid #f5dfa3; color: #7a5200; }
 .banner-demo { background: #eef3fb; border: 1px dashed var(--navy-500); color: var(--navy-700); font-size: 12.5px; }
+
+/* ---------- escolha de situação ---------- */
+.situacao-atual { font-size: 13px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 11px; margin-bottom: 14px; }
+.chips.sit button { padding-left: 12px; }
+.chips.sit button::before { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--cor); margin-right: 7px; }
+.chips.sit button.ativo { background: var(--cor); border-color: var(--cor); color: #fff; box-shadow: 0 2px 8px -2px var(--cor); }
+.chips.sit button.ativo::before { background: #fff; }

@@ -73,7 +73,10 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
 - Técnico: cria ocorrência, inicia atendimento (equipamento, executor, volume se barreira), registra avanço,
   resolve (foto de comprovação obrigatória). No celular vê só as ocorrências em aberto.
 - Gestor: tudo. DER: só leitura.
-- Status: Aberta → Em atendimento → Resolvida. Cada mudança guarda quem/quando/foto.
+- Situações: **Aberta → Aguardando atendimento / Em monitoramento / Em obras → Resolvida**.
+  Técnico e gestor alteram a situação (app: "Alterar situação"; painel: botão "Situação").
+  "Em obras" é a única que pede equipamento, executor e volume. Resolver continua exigindo foto de
+  comprovação — por isso só pelo app. Cada mudança guarda quem/quando/texto/foto no histórico.
 - Campo "possibilidade de colapso de pista" (destaque vermelho e anel preto no mapa/PDF).
 - km automático: projeta o GPS no trecho mais próximo da malha (até 300 m) e interpola o km oficial.
   Em cruzamentos pode sugerir a rodovia errada — por isso o técnico sempre confirma.

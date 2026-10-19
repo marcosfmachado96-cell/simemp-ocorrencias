@@ -19,6 +19,17 @@ Pelo próprio painel, logado como gestor: botão **Usuários** no topo.
 
 Instalar no celular: abrir o endereço do app → menu do navegador → **Adicionar à tela de início** → entrar com e-mail e senha.
 
+## Situação da ocorrência
+
+**Aberta → Aguardando atendimento / Em monitoramento / Em obras → Resolvida.**
+
+- No painel (gestor): abra a ocorrência → botão **Situação**.
+- No app (técnico): abra a ocorrência → **Alterar situação**.
+- **Em obras** pede equipamento, executor e (em queda de barreira) volume estimado.
+- **Resolvida** exige foto de comprovação, então só pelo app, no botão "Resolver".
+- Toda mudança entra no histórico com autor, data/hora e a descrição digitada.
+- O filtro **Status** do painel e o relatório PDF já consideram as novas situações.
+
 ## Corrigir uma ocorrência
 
 No painel, abra a ocorrência e clique em **Editar** (só gestor, só enquanto não estiver resolvida).

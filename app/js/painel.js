@@ -269,18 +269,18 @@
   STORE.onChange(render);
 
   function renderKpis() {
-    const abertas = todas.filter(o => o.status === 'aberta').length;
-    const emAt = todas.filter(o => o.status === 'em_atendimento').length;
+    const conta = id => todas.filter(o => CONFIG.eqStatus(o.status) === id).length;
     const crit = todas.filter(o => o.status !== 'resolvida' && o.severidade === 'critica').length;
     const colapso = todas.filter(o => o.status !== 'resolvida' && o.risco_colapso).length;
     const res = todas.filter(o => o.status === 'resolvida' && o.resolvida_em);
     const tm = res.length ? res.reduce((s, o) => s + horas(o.criado_em, o.resolvida_em), 0) / res.length : 0;
     const kpi = (ic, v, t, cor, alerta) => `<div class="kpi ${alerta ? 'alerta' : ''}" style="--c:${cor}"><div class="ico-wrap">${ic}</div><div><b>${v}</b><span>${t}</span></div></div>`;
+    const ico = { aberta: I.inbox, aguardando_atendimento: I.clock, em_monitoramento: I.search, em_obras: I.truck };
     $('#kpis').innerHTML =
-      kpi(I.inbox, abertas, 'Abertas', '#dc2626') +
-      kpi(I.truck, emAt, 'Em atendimento', '#d97706') +
-      kpi(I.zap, crit, 'Críticas em aberto', '#dc2626', crit > 0) +
+      CONFIG.STATUS.filter(x => x.id !== 'resolvida')
+        .map(x => kpi(ico[x.id] || I.inbox, conta(x.id), x.nome, x.cor)).join('') +
       kpi(I.alert, colapso, 'Risco de colapso', '#b91c1c', colapso > 0) +
+      kpi(I.zap, crit, 'Críticas em aberto', '#dc2626', crit > 0) +
       kpi(I.clock, tm ? tm.toFixed(0) + ' h' : '—', 'Tempo médio de resolução', '#2a63b0');
   }
 
@@ -372,6 +372,7 @@
     const acoes = el('div', 'acoes-detalhe');
     if (o.lat) { const bm = el('button', 'btn sec', I.pin + 'Ver no mapa'); bm.onclick = () => verNoMapa(o.id); acoes.appendChild(bm); }
     if (STORE.usuarioAtual().perfil === 'gestor' && o.status !== 'resolvida') {
+      const bs = el('button', 'btn sec', I.layers + 'Situação'); bs.onclick = () => modalSituacao(o); acoes.appendChild(bs);
       const be = el('button', 'btn sec', I.edit + 'Editar'); be.onclick = () => modalEditar(o); acoes.appendChild(be);
     }
     // a ocorrência está dentro de alguma ortofoto?
@@ -512,6 +513,77 @@
       }
       formNovo(); carregar();
     });
+  }
+
+  // ---------- situação da ocorrência (gestor) ----------
+  function modalSituacao(o) {
+    const opcoes = CONFIG.STATUS.filter(x => x.id !== 'aberta');
+    modal('Situação da ocorrência', m => {
+      m.innerHTML = `
+        <div class="situacao-atual">${esc(o.rodovia)} · km ${Number(o.km).toFixed(2).replace('.', ',')} — agora:
+          <b style="color:${CONFIG.corStatus(o.status)}">${esc(CONFIG.nomeStatus(o.status))}</b></div>
+        <div class="campo"><div class="rotulo">Nova situação</div><div class="chips sit" id="p-opcoes"></div></div>
+        <div id="p-equipe"></div>
+        <div class="campo"><label>Descrição (entra no histórico)</label><textarea id="p-texto" placeholder="O que motivou a mudança"></textarea></div>
+        <div class="erro-login oculto" id="p-erro"></div>
+        <div class="linha-campos">
+          <button class="btn sec" id="p-cancelar" style="flex:1">Cancelar</button>
+          <button class="btn" id="p-ok" style="flex:2">${I.check}Salvar situação</button>
+        </div>`;
+      let escolhido = CONFIG.eqStatus(o.status);
+      const cont = m.querySelector('#p-opcoes');
+      const at = o.atendimento || {};
+      function equipe() {
+        const alvo = m.querySelector('#p-equipe');
+        if (escolhido !== CONFIG.STATUS_COM_EQUIPE) { alvo.innerHTML = ''; return; }
+        if (alvo.querySelector('#p-equip')) return;
+        alvo.innerHTML = `
+          <div class="linha-campos">
+            <div class="campo"><label>Equipamento atuando</label><input type="text" id="p-equip" value="${esc(at.equipamento || '')}"></div>
+            <div class="campo"><label>Quem está realizando</label><input type="text" id="p-exec" value="${esc(at.executor || '')}"></div>
+          </div>
+          ${o.tipo === 'queda_barreira' ? `<div class="campo"><label>Volume estimado (m³)</label><input type="number" id="p-vol" value="${esc(at.volume_m3 || '')}"></div>` : ''}`;
+      }
+      opcoes.forEach(x => {
+        const b = el('button', null, esc(x.nome)); b.type = 'button';
+        b.style.setProperty('--cor', x.cor);
+        if (x.id === escolhido) b.classList.add('ativo');
+        b.onclick = () => {
+          escolhido = x.id;
+          [...cont.children].forEach(c => c.classList.remove('ativo'));
+          b.classList.add('ativo');
+          equipe();
+          m.querySelector('#p-erro').classList.toggle('oculto', x.id !== 'resolvida');
+          if (x.id === 'resolvida') m.querySelector('#p-erro').textContent =
+            'Resolver exige foto de comprovação — isso é feito pelo técnico, no app.';
+        };
+        cont.appendChild(b);
+      });
+      equipe();
+      m.querySelector('#p-cancelar').onclick = fecharModal;
+      m.querySelector('#p-ok').onclick = async () => {
+        const erro = m.querySelector('#p-erro');
+        if (escolhido === 'resolvida') {
+          erro.textContent = 'Para resolver é preciso a foto de comprovação, registrada pelo técnico no app.';
+          erro.classList.remove('oculto'); return;
+        }
+        let atd = null;
+        if (escolhido === CONFIG.STATUS_COM_EQUIPE) {
+          atd = { equipamento: (m.querySelector('#p-equip').value || '').trim(),
+                  executor: (m.querySelector('#p-exec').value || '').trim() };
+          const v = m.querySelector('#p-vol');
+          if (v) atd.volume_m3 = parseFloat(v.value) || null;
+          if (!atd.equipamento && !atd.executor && !atd.volume_m3) {
+            erro.textContent = 'Informe ao menos equipamento ou executor.'; erro.classList.remove('oculto'); return;
+          }
+        }
+        const b = m.querySelector('#p-ok'); b.disabled = true;
+        try {
+          await STORE.atualizar(o.id, { status: escolhido, texto: m.querySelector('#p-texto').value.trim(), atendimento: atd, fotosBlobs: [] });
+          fecharModal(); toast('Situação atualizada'); render();
+        } catch (e) { erro.textContent = e.message; erro.classList.remove('oculto'); b.disabled = false; }
+      };
+    }, '560px');
   }
 
   // ---------- edição da ocorrência (gestor) ----------
