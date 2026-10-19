@@ -1,37 +1,85 @@
-# Mantém o projeto Supabase ativo.
+# Mantém o sistema no ar apesar da pausa automática do Supabase.
 #
-# O plano gratuito pausa projetos após 7 dias sem atividade — e um projeto pausado
-# deixa o sistema fora do ar até alguém restaurar à mão. Esta rotina faz uma consulta
-# mínima ao banco três vezes por semana, o que conta como atividade.
+# O plano gratuito pausa projetos "inativos" e, como descobrimos na prática, consultar
+# a API REST NÃO conta como atividade — o projeto pausou mesmo com consultas respondendo
+# em 14/10 e 16/10. Por isso esta rotina não tenta mais evitar a pausa: ela detecta e
+# RESTAURA sozinha, de hora em hora.
 #
-# Não usa segredos: a chave consultada é a mesma publicada no site (publishable),
-# e a consulta só conta registros, sem ler dados.
+# Para a restauração automática funcionar é preciso cadastrar, em
+# Settings > Secrets and variables > Actions do repositório, o segredo:
+#   SUPABASE_TOKEN  — token pessoal gerado em https://supabase.com/dashboard/account/tokens
+#
+# Sem esse segredo a rotina ainda avisa por e-mail quando o sistema cai, mas a
+# restauração precisa ser feita à mão no painel do Supabase.
 name: Manter o Supabase ativo
 
 on:
   schedule:
-    - cron: "17 12 * * 1,3,5"   # segunda, quarta e sexta, 12:17 UTC (9h17 em Brasília)
+    - cron: "25 * * * *"      # de hora em hora
   workflow_dispatch:
 
+concurrency:
+  group: manter-ativo
+  cancel-in-progress: false
+
 jobs:
-  ping:
+  verificar:
     runs-on: ubuntu-latest
+    env:
+      PROJETO: dsgtfrkyocevlywscpvu
+      CHAVE: sb_publishable_yFe77x8yjIbmwXctUWt9Sw_uaUWmnHQ
     steps:
-      - name: Consultar o banco
+      - name: Verificar se o sistema responde
+        id: checar
         run: |
-          URL="https://dsgtfrkyocevlywscpvu.supabase.co/rest/v1/ocorrencias?select=id&limit=1"
-          CHAVE="sb_publishable_yFe77x8yjIbmwXctUWt9Sw_uaUWmnHQ"
-          for tentativa in 1 2 3; do
-            CODIGO=$(curl -s -o /tmp/resposta -w "%{http_code}" --max-time 30 \
-              -H "apikey: $CHAVE" -H "Prefer: count=exact" "$URL" || echo "000")
-            echo "tentativa $tentativa: HTTP $CODIGO"
-            if [ "$CODIGO" = "200" ]; then
-              echo "Supabase respondeu normalmente."
+          URL="https://$PROJETO.supabase.co/rest/v1/ocorrencias?select=id&limit=1"
+          CODIGO=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -H "apikey: $CHAVE" "$URL" || echo "000")
+          echo "HTTP $CODIGO"
+          echo "codigo=$CODIGO" >> "$GITHUB_OUTPUT"
+
+      - name: Restaurar o projeto (se estiver pausado)
+        if: steps.checar.outputs.codigo != '200'
+        env:
+          TOKEN: ${{ secrets.SUPABASE_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::O sistema está fora do ar e o segredo SUPABASE_TOKEN não está configurado."
+            echo "::error::Restaure à mão: https://supabase.com/dashboard/project/$PROJETO"
+            exit 1
+          fi
+
+          ESTADO=$(curl -s --max-time 30 -H "Authorization: Bearer $TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJETO" | grep -o '"status":"[^"]*"' | head -1)
+          echo "estado do projeto: $ESTADO"
+
+          if echo "$ESTADO" | grep -qi "ACTIVE_HEALTHY"; then
+            echo "O projeto está ativo; a falha foi passageira."
+            exit 0
+          fi
+
+          echo "Projeto pausado — pedindo restauração…"
+          RESP=$(curl -s -w "\n%{http_code}" --max-time 60 -X POST \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            "https://api.supabase.com/v1/projects/$PROJETO/restore" -d '{}')
+          CODIGO=$(echo "$RESP" | tail -1)
+          echo "resposta da restauração: HTTP $CODIGO"
+          echo "$RESP" | head -n -1
+
+          if [ "$CODIGO" != "200" ] && [ "$CODIGO" != "201" ] && [ "$CODIGO" != "204" ]; then
+            echo "::error::Não foi possível restaurar automaticamente (HTTP $CODIGO)."
+            echo "::error::Restaure à mão: https://supabase.com/dashboard/project/$PROJETO"
+            exit 1
+          fi
+
+          # espera o projeto voltar (até ~10 min)
+          for i in $(seq 1 20); do
+            sleep 30
+            C=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 \
+              -H "apikey: $CHAVE" "https://$PROJETO.supabase.co/rest/v1/ocorrencias?select=id&limit=1" || echo "000")
+            echo "  verificação $i: HTTP $C"
+            if [ "$C" = "200" ]; then
+              echo "::notice::Sistema restaurado automaticamente."
               exit 0
             fi
-            sleep 20
           done
-          echo "::error::O Supabase não respondeu (HTTP $CODIGO). O projeto pode estar pausado —"
-          echo "::error::restaure em https://supabase.com/dashboard/project/dsgtfrkyocevlywscpvu"
-          cat /tmp/resposta || true
-          exit 1
+          echo "::warning::Restauração pedida, mas o sistema ainda não respondeu. Deve voltar em instantes."

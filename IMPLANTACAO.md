@@ -58,19 +58,27 @@ Gera curvas de nível, a grade de altitude e a camada de declividade em `app/rel
 
 ## Se o sistema sair do ar ("Failed to fetch")
 
-O plano gratuito do Supabase **pausa o projeto após 7 dias sem atividade** — o endereço sai do ar e
-o app/painel mostra "Failed to fetch". Os dados não se perdem (o Supabase mantém banco, backups e fotos;
-no nosso caso, com prazo para retomar até 16/11/2027).
+O plano gratuito do Supabase **pausa o projeto por inatividade** — o endereço sai do ar e o app/painel
+mostra "Failed to fetch". Os dados não se perdem (banco, backups e fotos ficam guardados).
 
-Para voltar: https://supabase.com/dashboard/project/dsgtfrkyocevlywscpvu → **Resume project**.
-Leva de alguns minutos a algumas horas (o nosso é pequeno: minutos).
+**Consultar a API não evita a pausa.** Testamos: o projeto pausou mesmo com consultas respondendo
+normalmente em 14/10 e 16/10. Só uso real (gente registrando pelo app) conta como atividade.
+
+Por isso a rotina [.github/workflows/manter-ativo.yml](.github/workflows/manter-ativo.yml) roda **de hora
+em hora** e, se encontrar o sistema fora do ar, **restaura sozinha** pela API do Supabase. Com isso a
+indisponibilidade máxima fica em cerca de uma hora, sem ninguém precisar agir.
+
+Para a restauração automática funcionar, cadastre uma vez o segredo no repositório:
+
+1. Gere um token em https://supabase.com/dashboard/account/tokens (*Generate new token*, nome "github-actions").
+2. No GitHub: repositório → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
+3. Nome: `SUPABASE_TOKEN`. Valor: o token gerado. Salvar.
+
+Sem o segredo, a rotina apenas avisa por e-mail e a restauração precisa ser feita à mão em
+https://supabase.com/dashboard/project/dsgtfrkyocevlywscpvu → **Resume project**.
 
 Os registros feitos pelos técnicos durante a pausa **não se perdem**: ficam na fila do celular e sobem
 sozinhos quando o servidor volta.
-
-Para evitar novas pausas existe a rotina [.github/workflows/manter-ativo.yml](.github/workflows/manter-ativo.yml),
-que consulta o banco três vezes por semana (segunda, quarta e sexta). Se a consulta falhar, o GitHub envia
-e-mail avisando — é o alerta de que o projeto caiu.
 
 ## Atualizar o sistema
 

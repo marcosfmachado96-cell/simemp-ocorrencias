@@ -113,5 +113,6 @@ Tipografia Inter (Google Fonts, com fallback do sistema), paleta azul-marinho in
 
 Publicação: push na branch `main` → GitHub Actions publica `app/` no GitHub Pages.
 
-Uma segunda rotina (`.github/workflows/manter-ativo.yml`) consulta o Supabase três vezes por semana para
-o projeto não ser pausado por inatividade (plano gratuito pausa após 7 dias). Se falhar, o GitHub avisa por e-mail.
+Uma segunda rotina (`.github/workflows/manter-ativo.yml`) verifica de hora em hora se o Supabase está no ar
+e, se estiver pausado (o plano gratuito pausa por inatividade), **restaura sozinho** pela API — basta ter o
+segredo `SUPABASE_TOKEN` cadastrado no repositório. Ver IMPLANTACAO.md.
